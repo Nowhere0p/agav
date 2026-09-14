@@ -18,12 +18,12 @@ const base: AgavConfig = {
   permissionMode: "ask",
 };
 
- vi.mock("../config/history.js", () => ({
-        listSessions: vi.fn(),
-      }));
+vi.mock("../config/history.js", () => ({
+  listSessions: vi.fn(),
+}));
 
 
-describe("startup provider and model resolution",  () => {
+describe("startup provider and model resolution", () => {
   it("keeps configured selection for plain startup", async () => {
     expect(await resolveStartupSelection(base, {})).toMatchObject({
       provider: "anthropic",
@@ -36,20 +36,20 @@ describe("startup provider and model resolution",  () => {
       provider: "openai",
       model: "gpt-5.4-mini",
     });
-    expect( await resolveStartupSelection(base, { cliProvider: "openrouter" })).toMatchObject({
+    expect(await resolveStartupSelection(base, { cliProvider: "openrouter" })).toMatchObject({
       provider: "openrouter",
       model: "openrouter/auto",
     });
   });
 
   it("restores both provider and model from a resumed session", async () => {
-    expect( await resolveStartupSelection(base, {
+    expect(await resolveStartupSelection(base, {
       session: { provider: "gemini", model: "gemini-session-model" },
     })).toMatchObject({ provider: "gemini", model: "gemini-session-model" });
   });
 
   it("does not combine a CLI provider override with another provider's saved model", async () => {
-    expect( await resolveStartupSelection(base, {
+    expect(await resolveStartupSelection(base, {
       cliProvider: "openai",
       session: { provider: "anthropic", model: "claude-session-model" },
     })).toMatchObject({ provider: "openai", model: "gpt-5.4-mini" });
@@ -82,7 +82,7 @@ describe("startup provider and model resolution",  () => {
     })).toMatchObject({ provider: "openai", model: "private-model" });
   });
 
- 
+
   it("rejects an unsupported saved provider unless the CLI replaces it", async () => {
     await expect(
       resolveStartupSelection(base, {
@@ -142,50 +142,50 @@ describe("startup provider and model resolution",  () => {
   });
 });
 
- describe("listSessions and recent session startup resolution", () => {
-        beforeEach(() => {
-          vi.clearAllMocks();
-        });
+describe("listSessions and recent session startup resolution", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-        it("falls back to the most recent session's model and provider on plain startup", async () => {
-          vi.mocked(listSessions).mockResolvedValue([
-            {
-              id: "session-1",
-              createdAt: "2025-01-01T00:00:00.000Z",
-              provider: "openai",
-              model: "gpt-4o",
-              title: "Saved Session",
-              messages: [],
-            },
-          ]);
-          const selection = await resolveStartupSelection(base, {});
-          expect(selection).toMatchObject({
-            provider: "openai",
-            model: "gpt-4o",
-          });
-        });
+  it("falls back to the most recent session's model and provider on plain startup", async () => {
+    vi.mocked(listSessions).mockResolvedValue([
+      {
+        id: "session-1",
+        createdAt: "2025-01-01T00:00:00.000Z",
+        provider: "openai",
+        model: "gpt-4o",
+        title: "Saved Session",
+        messages: [],
+      },
+    ]);
+    const selection = await resolveStartupSelection(base, {});
+    expect(selection).toMatchObject({
+      provider: "openai",
+      model: "gpt-4o",
+    });
+  });
 
-        it("prefers explicit CLI provider over saved session history", async () => {
-          vi.mocked(listSessions).mockResolvedValue([
-            {
-              id: "session-1",
-              createdAt: "2025-01-01T00:00:00.000Z",
-              provider: "openai",
-              model: "gpt-4o",
-              title: "Saved Session",
-              messages: [],
-            },
-          ]);
-           const selection = await resolveStartupSelection(base, { cliProvider: "anthropic" });
-          expect(selection).toMatchObject({
-            provider: "anthropic",
-            model: "configured-claude",
-          });
-        });
+  it("prefers explicit CLI provider over saved session history", async () => {
+    vi.mocked(listSessions).mockResolvedValue([
+      {
+        id: "session-1",
+        createdAt: "2025-01-01T00:00:00.000Z",
+        provider: "openai",
+        model: "gpt-4o",
+        title: "Saved Session",
+        messages: [],
+      },
+    ]);
+    const selection = await resolveStartupSelection(base, { cliProvider: "anthropic" });
+    expect(selection).toMatchObject({
+      provider: "anthropic",
+      model: "configured-claude",
+    });
+  });
 
-        it("returns empty array if no history exists", async () => {
-          vi.mocked(listSessions).mockResolvedValue([]);
-          const sessions = await listSessions();
-          expect(sessions).toEqual([]);
-        });
-      });
+  it("returns empty array if no history exists", async () => {
+    vi.mocked(listSessions).mockResolvedValue([]);
+    const sessions = await listSessions();
+    expect(sessions).toEqual([]);
+  });
+});

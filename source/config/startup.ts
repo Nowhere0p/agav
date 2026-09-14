@@ -77,14 +77,14 @@ export async function resolveStartupSelection(
     result.model = options.cliModel ?? (options.session.model || defaultModelForProvider(sessionProvider));
   } else if (options.cliModel !== undefined) {
     result.model = options.cliModel;
-  }else {
-        const recentSessions = (await listSessions()) || [];
-        const lastSession = recentSessions.length? recentSessions[0]:undefined
-        if (lastSession && isProviderName(lastSession.provider)) {
-          result.provider = lastSession.provider;
-          result.model = lastSession.model;
-        }
-      }
+  } else {
+    const recentSessions = (await listSessions()) || [];
+    const lastSession = recentSessions.length ? recentSessions[0] : undefined
+    if (lastSession && isProviderName(lastSession.provider)) {
+      result.provider = lastSession.provider;
+      result.model = lastSession.model;
+    }
+  }
 
   return result;
 }
