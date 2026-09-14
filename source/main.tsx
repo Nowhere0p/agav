@@ -624,7 +624,7 @@ export async function main() {
     }
   }
 
-  Object.assign(config, resolveStartupSelection(config, {
+  Object.assign(config, await resolveStartupSelection(config, {
     cliProvider,
     cliModel: typeof flags.model === "string" ? flags.model : undefined,
     session: resumeSelection,

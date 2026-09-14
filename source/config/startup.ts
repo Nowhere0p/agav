@@ -1,8 +1,7 @@
 import { getAgavDir, type AgavConfig } from "./config.js";
 import type { SessionRecord } from "./history.js";
 import { agavHomePath, examplePath, setEnvHint } from "../utils/shell-hints.js";
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { listSessions } from "./history.js";
 
 export type ProviderName = AgavConfig["provider"];
 
@@ -43,10 +42,10 @@ interface StartupSelectionOptions {
 }
 
 /** Resolve provider/model precedence before validating any provider credentials. */
-export function resolveStartupSelection(
+export async function resolveStartupSelection(
   config: AgavConfig,
   options: StartupSelectionOptions,
-): AgavConfig {
+): Promise<AgavConfig> {
   const result = { ...config };
   const sessionProvider = isProviderName(options.session?.provider)
     ? options.session.provider
@@ -79,10 +78,11 @@ export function resolveStartupSelection(
   } else if (options.cliModel !== undefined) {
     result.model = options.cliModel;
   }else {
-        const recentSession = loadMostRecentSession();
-        if (recentSession && isProviderName(recentSession.provider)) {
-          result.provider = recentSession.provider;
-          result.model = recentSession.model;
+        const recentSessions = (await listSessions()) || [];
+        const lastSession = recentSessions.length? recentSessions[0]:undefined
+        if (lastSession && isProviderName(lastSession.provider)) {
+          result.provider = lastSession.provider;
+          result.model = lastSession.model;
         }
       }
 
@@ -176,36 +176,5 @@ export function providerConfigurationError(config: AgavConfig): string | null {
       return config.vertexAICredentialsPath ? null
         : `Vertex AI service account credentials not found. Run ${setEnvHint("VERTEX_AI_CREDENTIALS_PATH", examplePath("path", "to", "service-account.json"))} or add it to ${agavHomePath("config.json")}`;
     case "ollama": return null;
-  }
-}
-
-/**
- * Load the most recent session from the history directory that has a supported provider.
- * @returns The most recent session with a supported provider, or undefined if none found.
- */
-export function loadMostRecentSession(): SessionRecord | undefined {
-  try {
-    const historyDir = join(getAgavDir(), "history");
-    const files = readdirSync(historyDir);
-    const jsonFiles = files.filter(f => f.endsWith(".json"));
-    const sessions = jsonFiles
-      .map(file => {
-        try {
-          const raw = readFileSync(join(historyDir, file), "utf-8");
-          return JSON.parse(raw) as SessionRecord;
-        } catch {
-          return null;
-        }
-      })
-      .filter((s): s is SessionRecord => s !== null)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    for (const session of sessions) {
-      if (isProviderName(session.provider)) {
-        return session;
-      }
-    }
-    return undefined;
-  } catch {
-    return undefined;
   }
 }
