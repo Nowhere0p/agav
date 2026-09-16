@@ -1,4 +1,4 @@
-import { getAgavDir, type AgavConfig } from "./config.js";
+import { type AgavConfig } from "./config.js";
 import type { SessionRecord } from "./history.js";
 import { agavHomePath, examplePath, setEnvHint } from "../utils/shell-hints.js";
 import { listSessions } from "./history.js";
