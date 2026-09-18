@@ -424,6 +424,7 @@ export async function main() {
     --deny-writes        Block all write operations
     --help, -h           Show this help
     --version, -v        Show version
+    --max-turns          Caps the number of agentic turns in a session
 
   Agent Commands
     $ agav agents list             List installed agents
@@ -800,14 +801,19 @@ export async function main() {
     await showResumeHint();
     process.exit(0);
   });
-
+  const maxTurns: number | undefined = (() => {
+    const raw = typeof flags.maxTurns === "string" ? flags.maxTurns.trim() : "";
+    if (!raw) return undefined;
+    const n = Number.parseInt(raw, 10);
+    return Number.isInteger(n) && n > 0 ? n : undefined
+  })();
   const { getGitContext } = await import("./utils/git.js");
   const { detectKittyKeyboard } = await import("./utils/terminal-keyboard.js");
   // The keyboard probe waits on the terminal, so overlap it with the git lookup
   // rather than adding its timeout to startup. Both settle rather than reject.
   const [gitContext, enhancedKeyboard] = await Promise.all([getGitContext(), detectKittyKeyboard()]);
 
-  const { waitUntilExit } = render(<App config={config} keybindings={keybindings} resumeMessages={resumeMessages} resumeSessionId={resumeSessionId} resumeTokenUsage={resumeTokenUsage} resumeCompacted={resumeCompacted} resumeSessionName={resumeSessionName} repoBranch={gitContext?.branch} enhancedKeyboard={enhancedKeyboard} />, {
+  const { waitUntilExit } = render(<App config={config} keybindings={keybindings} resumeMessages={resumeMessages} resumeSessionId={resumeSessionId} resumeTokenUsage={resumeTokenUsage} resumeCompacted={resumeCompacted} resumeSessionName={resumeSessionName} repoBranch={gitContext?.branch} enhancedKeyboard={enhancedKeyboard} maxTurns={maxTurns} />, {
     exitOnCtrlC: true,
     // Alt-screen keeps the UI self-contained (no scrollback pollution, no
     // flicker on terminals without DEC 2026). In-app scrolling is handled by
