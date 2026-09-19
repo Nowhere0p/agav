@@ -703,13 +703,19 @@ export async function main() {
   }
 
   startupFinished = true;
-
+  const maxTurns: number | undefined = (() => {
+    const raw = typeof flags.maxTurns === "string" ? flags.maxTurns.trim() : "";
+    if (!raw) return undefined;
+    const n = Number.parseInt(raw, 10);
+    return Number.isInteger(n) && n > 0 ? n : undefined
+  })();
   // Short-circuit into non-interactive mode before the Ink UI is rendered.
   if (flags.print) {
     const provider = createProvider(config);
     const exitCode = await runPipeMode(String(flags.printPrompt ?? ""), config, provider, {
       stream: flags.stream === true,
       outputSchema,
+      maxTurns: maxTurns
     });
     process.exit(exitCode);
     return;
@@ -720,6 +726,7 @@ export async function main() {
     const runOptions: Parameters<typeof runPipeMode>[3] = {
       stream: true,
       includeDynamicContext: true,
+      maxTurns: maxTurns
     };
 
     // Parse permission from --permission flag or AGAV_PERMISSION env var
@@ -744,11 +751,6 @@ export async function main() {
         process.stderr.write("Error: Invalid JSON in --permission / AGAV_PERMISSION\n");
         process.exit(1);
       }
-    }
-
-    if (typeof flags.maxTurns === "string" && flags.maxTurns) {
-      const n = parseInt(flags.maxTurns, 10);
-      if (!isNaN(n) && n > 0) runOptions.maxTurns = n;
     }
 
     const exitCode = await runPipeMode(String(flags.runPrompt ?? ""), config, provider, runOptions);
@@ -801,12 +803,7 @@ export async function main() {
     await showResumeHint();
     process.exit(0);
   });
-  const maxTurns: number | undefined = (() => {
-    const raw = typeof flags.maxTurns === "string" ? flags.maxTurns.trim() : "";
-    if (!raw) return undefined;
-    const n = Number.parseInt(raw, 10);
-    return Number.isInteger(n) && n > 0 ? n : undefined
-  })();
+
   const { getGitContext } = await import("./utils/git.js");
   const { detectKittyKeyboard } = await import("./utils/terminal-keyboard.js");
   // The keyboard probe waits on the terminal, so overlap it with the git lookup
