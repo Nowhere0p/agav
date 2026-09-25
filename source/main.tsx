@@ -716,7 +716,7 @@ export async function main() {
     return n;
   })();
 
-  if(maxTurns !== undefined){
+  if (maxTurns !== undefined) {
     config.maxIterations = maxTurns
   }
 
