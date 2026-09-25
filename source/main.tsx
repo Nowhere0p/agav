@@ -704,10 +704,16 @@ export async function main() {
 
   startupFinished = true;
   const maxTurns: number | undefined = (() => {
-    const raw = typeof flags.maxTurns === "string" ? flags.maxTurns.trim() : "";
+    const raw = typeof flags.maxTurns === "string"
+      ? flags.maxTurns.trim()
+      : "";
     if (!raw) return undefined;
     const n = Number.parseInt(raw, 10);
-    return Number.isInteger(n) && n > 0 ? n : undefined
+    if (!Number.isInteger(n) || n <= 0) {
+      process.stderr.write("Error: --max-turns must be a positive integer\n");
+      process.exit(1);
+    }
+    return n;
   })();
   // Short-circuit into non-interactive mode before the Ink UI is rendered.
   if (flags.print) {
