@@ -224,7 +224,7 @@ export async function runPipeMode(
   prompt: string,
   config: AgavConfig,
   provider: LLMProvider,
-  options: { stream?: boolean; outputSchema?: OutputSchema; stdinContent?: string; includeDynamicContext?: boolean; permissionOverride?: import("./config/config.js").PermissionMode; allowedToolsOverride?: string[]; maxTurns?: number } = {},
+  options: { stream?: boolean; outputSchema?: OutputSchema; stdinContent?: string; includeDynamicContext?: boolean; permissionOverride?: import("./config/config.js").PermissionMode; allowedToolsOverride?: string[]; } = {},
 ): Promise<number> {
   const { stream = false, outputSchema } = options;
   const stdinContent = options.stdinContent ?? await readStdin();
@@ -285,7 +285,7 @@ export async function runPipeMode(
         systemPrompt,
         effort: config.effort,
         maxTokens: config.maxTokens,
-        maxIterations: options.maxTurns ?? config.maxIterations,
+        maxIterations: config.maxIterations,
         permissionMode,
         allowedTools: options.allowedToolsOverride,
       });
@@ -715,16 +715,19 @@ export async function main() {
     }
     return n;
   })();
+
+  if(maxTurns !== undefined){
+    config.maxIterations = maxTurns
+  }
+
   // Short-circuit into non-interactive mode before the Ink UI is rendered.
   if (flags.print) {
     const provider = createProvider(config);
     const exitCode = await runPipeMode(String(flags.printPrompt ?? ""), config, provider, {
       stream: flags.stream === true,
       outputSchema,
-      maxTurns: maxTurns
     });
     process.exit(exitCode);
-    return;
   }
 
   if (flags.run) {
@@ -732,7 +735,6 @@ export async function main() {
     const runOptions: Parameters<typeof runPipeMode>[3] = {
       stream: true,
       includeDynamicContext: true,
-      maxTurns: maxTurns
     };
 
     // Parse permission from --permission flag or AGAV_PERMISSION env var
@@ -816,7 +818,7 @@ export async function main() {
   // rather than adding its timeout to startup. Both settle rather than reject.
   const [gitContext, enhancedKeyboard] = await Promise.all([getGitContext(), detectKittyKeyboard()]);
 
-  const { waitUntilExit } = render(<App config={config} keybindings={keybindings} resumeMessages={resumeMessages} resumeSessionId={resumeSessionId} resumeTokenUsage={resumeTokenUsage} resumeCompacted={resumeCompacted} resumeSessionName={resumeSessionName} repoBranch={gitContext?.branch} enhancedKeyboard={enhancedKeyboard} maxTurns={maxTurns} />, {
+  const { waitUntilExit } = render(<App config={config} keybindings={keybindings} resumeMessages={resumeMessages} resumeSessionId={resumeSessionId} resumeTokenUsage={resumeTokenUsage} resumeCompacted={resumeCompacted} resumeSessionName={resumeSessionName} repoBranch={gitContext?.branch} enhancedKeyboard={enhancedKeyboard} />, {
     exitOnCtrlC: true,
     // Alt-screen keeps the UI self-contained (no scrollback pollution, no
     // flicker on terminals without DEC 2026). In-app scrolling is handled by

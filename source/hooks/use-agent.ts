@@ -162,9 +162,7 @@ export function useAgent(
   resumeTokenUsage?: import("../config/history.js").SessionTokenUsage,
   resumeCompacted?: boolean,
   resumeSessionName?: string,
-  maxTurns?: number,
 ): UseAgentReturn {
-  const effectiveMaxIterations = (maxTurns ?? config.maxIterations)
   const { resetDisplay } = useApp();
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [streamingText, setStreamingText] = useState("");
@@ -790,7 +788,7 @@ export function useAgent(
             systemPrompt: effectiveSystemPrompt,
             effort: config.effort,
             maxTokens: config.maxTokens,
-            maxIterations: effectiveMaxIterations,
+            maxIterations: config.maxIterations,
             signal: abortController.signal,
             confirmTool: confirmToolCallback,
             permissionMode: sessionPermissionModeRef.current ?? config.permissionMode,

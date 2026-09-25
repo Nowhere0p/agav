@@ -59,7 +59,6 @@ interface Props {
   repoBranch?: string;
   /** Whether the terminal negotiated an enhanced keyboard protocol (Shift+Enter is legible). */
   enhancedKeyboard?: boolean;
-  maxTurns?: number
 }
 
 const BANNER: DisplayMessage = {
@@ -71,7 +70,7 @@ const BANNER: DisplayMessage = {
 let sysMessageId = 0;
 
 /** Render the interactive terminal UI and coordinate command, tool, and subagent views. */
-export default function App({ config: initialConfig, keybindings, resumeMessages, resumeSessionId, resumeTokenUsage, resumeCompacted, resumeSessionName, repoBranch, enhancedKeyboard = false, maxTurns }: Props) {
+export default function App({ config: initialConfig, keybindings, resumeMessages, resumeSessionId, resumeTokenUsage, resumeCompacted, resumeSessionName, repoBranch, enhancedKeyboard = false}: Props) {
 
   const [input, setInput] = useState("");
   const [config, setConfig] = useState(initialConfig);
@@ -188,7 +187,7 @@ export default function App({ config: initialConfig, keybindings, resumeMessages
     sessionName,
     turnStartTime,
     lastTurnDurationMs,
-  } = useAgent(activeProvider, config, resumeMessages, resumeSessionId, resumeTokenUsage, resumeCompacted, resumeSessionName, maxTurns);
+  } = useAgent(activeProvider, config, resumeMessages, resumeSessionId, resumeTokenUsage, resumeCompacted, resumeSessionName);
 
   /**
    * Exit cleanly. Aborts any in-flight agent turn (streaming/tool call) and
