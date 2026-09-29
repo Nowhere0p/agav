@@ -58,7 +58,6 @@ interface LoopParams {
   signal?: AbortSignal;
   confirmTool?: ConfirmToolFn;
   permissionMode?: PermissionMode;
-  maxIterations?: number;
   allowedTools?: string[];
   hooks?: import("../config/config.js").AgavHooks;
   /**
@@ -68,6 +67,7 @@ interface LoopParams {
    * the loop simply never receives mid-turn steers.
    */
   drainSteers?: () => string[];
+  iterationsBudget?: {remaining : number, total : number}
 }
 
 // Tools that never need confirmation because they cannot modify the working
@@ -133,7 +133,9 @@ export async function* runAgentLoop(
   let lastShellFailed = false;
   let verifyReprompts = 0;
   const MAX_VERIFY_REPROMPTS = 2;
-  const maxIterations = params.maxIterations ?? 100;
+  const iterationsBudget = params.iterationsBudget ?? { remaining: 50, total: 50 }; // silent fallback
+
+
   // Calls the user has already refused, keyed by name + arguments. Scoped to
   // the full loop invocation (not per-turn) so the model cannot retry a denied
   // call later in the same session. This is intentionally conservative: if the
@@ -192,8 +194,9 @@ export async function* runAgentLoop(
       // Non-fatal — fall back to the name-based limits.
     }
   }
-
-  for (let iteration = 0; iteration < maxIterations; iteration++) {
+  const maxIterations = Math.min(iterationsBudget.total, iterationsBudget.remaining);
+  for (let iteration = 0; iteration < maxIterations && iterationsBudget.remaining > 0; iteration++) {
+    iterationsBudget.remaining--;
     // Auto-compact if conversation is getting long
     const { compacted, droppedCount } = await conversation.compactIfNeeded(false, summarize);
     if (compacted) {
@@ -205,7 +208,7 @@ export async function* runAgentLoop(
     }
 
     // Graceful shutdown: on the last step, ask for a summary instead of hard-erroring
-    const isLastStep = iteration === maxIterations - 1;
+    const isLastStep = iterationsBudget.remaining <= 0 || iteration === maxIterations - 1;
     if (isLastStep) {
       conversation.addInternalUserMessage(MAX_STEPS_PROMPT);
     }

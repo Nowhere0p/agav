@@ -187,6 +187,7 @@ export default function App({ config: initialConfig, keybindings, resumeMessages
     sessionName,
     turnStartTime,
     lastTurnDurationMs,
+    iterationsBudget
   } = useAgent(activeProvider, config, resumeMessages, resumeSessionId, resumeTokenUsage, resumeCompacted, resumeSessionName);
 
   /**
@@ -776,7 +777,8 @@ export default function App({ config: initialConfig, keybindings, resumeMessages
             skillsTUIResolveRef.current = onDone;
             setSkillsTUIActive(true);
           },
-        });
+          iterationsBudget: iterationsBudget 
+        },);
 
         setRunningSkillName(null);
 

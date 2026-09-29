@@ -39,7 +39,7 @@ describe("skills/tool", () => {
         systemPrompt: "",
         permissionMode: "ask",
         effort: "medium",
-        maxIterations: 1,
+        iterationsBudget: {remaining : 1,total : 1},
       }),
       onTokenUsage,
       getSignal: () => undefined,

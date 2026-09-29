@@ -80,6 +80,7 @@ export async function executeNativeAgent(
     confirmTool?: (toolName: string, input: Record<string, unknown>, diff?: any[]) => Promise<import("../agent/loop.js").ConfirmResult>;
     /** Explicit mode for direct executions such as a full-access agent lock. */
     permissionMode?: PermissionMode;
+    iterationsBudget? : { remaining:number, total:number }
   }
 ): Promise<string> {
   const callId = `${agent.manifest.name}-${randomUUID().slice(0, 8)}`;
@@ -155,7 +156,7 @@ export async function executeNativeAgent(
       signal: deps.signal,
       confirmTool: deps.confirmTool ?? (deps.permissionMode === "auto-accept" ? async () => "yes" : undefined),
       permissionMode: deps.permissionMode ?? (deps.confirmTool ? "ask" : "deny-writes"),
-      maxIterations: 50,
+      iterationsBudget: deps.iterationsBudget ?? { remaining : deps.config.maxIterations , total: deps.config.maxIterations } ,
       allowedTools: nativeTools,
       hooks: deps.hooks,
     });

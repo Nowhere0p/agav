@@ -89,7 +89,7 @@ describe("permission gate: destructive flag trust", () => {
         maxTokens: 1000,
         confirmTool,
         permissionMode: "ask",
-        maxIterations: 2,
+        iterationsBudget: {remaining : 5,total : 5},
       })
     );
 
@@ -123,6 +123,7 @@ describe("permission gate: destructive flag trust", () => {
       provider,
       config: { model: "mock", effort: "low", maxTokens: 1000 } as any,
       permissionMode: "auto-accept",
+      iterationsBudget: {remaining: 5, total: 10}
     })).resolves.toBe("Done");
 
     expect(tool.execute).toHaveBeenCalled();
@@ -160,7 +161,7 @@ describe("permission gate: destructive flag trust", () => {
         effort: "low",
         maxTokens: 1000,
         permissionMode: "deny-writes",
-        maxIterations: 2,
+        iterationsBudget: {remaining : 5,total : 5},
       })
     );
 

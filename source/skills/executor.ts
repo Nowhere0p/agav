@@ -19,7 +19,7 @@ interface SkillExecDeps {
   systemPrompt: string;
   permissionMode: PermissionMode;
   effort: EffortLevel;
-  maxIterations: number;
+  iterationsBudget : { remaining : number , total:number};
   confirmTool?: (toolName: string, input: Record<string, unknown>) => Promise<ConfirmResult>;
   // Optional nested-skill accounting callback: /skill-name continues to use _tokenUsage on the
   // returned command result, while activate_skill uses this to merge usage into the parent turn.
@@ -152,7 +152,7 @@ export async function executeSkill(
     signal: deps.signal,
     confirmTool: deps.confirmTool,
     permissionMode: deps.permissionMode,
-    maxIterations: deps.maxIterations,
+    iterationsBudget: deps.iterationsBudget ?? { remaining :50, total : 50 },
   });
 
   let result = "";

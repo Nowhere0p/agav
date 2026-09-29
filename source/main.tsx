@@ -274,7 +274,7 @@ export async function runPipeMode(
     let exitCode = 0;
     let madeEdits = false;
     const maxRetries = 3;
-
+    const iterationsBudget = {remaining: config.maxIterations,total: config.maxIterations};
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       madeEdits = false;
       const loop = runAgentLoop({
@@ -285,7 +285,7 @@ export async function runPipeMode(
         systemPrompt,
         effort: config.effort,
         maxTokens: config.maxTokens,
-        maxIterations: config.maxIterations,
+        iterationsBudget: iterationsBudget,
         permissionMode,
         allowedTools: options.allowedToolsOverride,
       });
@@ -719,7 +719,6 @@ export async function main() {
   if (maxTurns !== undefined) {
     config.maxIterations = maxTurns
   }
-
   // Short-circuit into non-interactive mode before the Ink UI is rendered.
   if (flags.print) {
     const provider = createProvider(config);

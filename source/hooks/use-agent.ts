@@ -151,6 +151,7 @@ interface UseAgentReturn {
   transcriptRevision: number;
   turnStartTime: number | null;
   lastTurnDurationMs: number | null;
+  iterationsBudget?: {remaining:number; total:number};
 }
 
 /** Own the agent lifecycle, conversation state, tool events, persistence, and confirmations. */
@@ -217,6 +218,7 @@ export function useAgent(
   const sessionPermissionModeRef = useRef<AgavConfig["permissionMode"] | undefined>(undefined);
   const resetPlanContinue = () => { planContinueRef.current = { stepId: -1, attempts: 0 }; };
   const resumedRef = useRef(false);
+  const currentIterationsBudgetRef = useRef<{remaining:number; total:number} | null>(null);
 
   const subagentToolRef = useRef<{ cancelSubagent: (id: string) => void } | null>(null);
   const confirmationQueueRef = useRef(new ConfirmationQueue());
@@ -271,7 +273,7 @@ export function useAgent(
           systemPrompt: configRef.current.systemPrompt ?? "",
           permissionMode: configRef.current.permissionMode,
           effort: configRef.current.effort,
-          maxIterations: configRef.current.maxIterations,
+          iterationsBudget: currentIterationsBudgetRef.current ?? { remaining: configRef.current.maxIterations, total: configRef.current.maxIterations },
         }),
         confirmationQueue: confirmationQueueRef.current,
         onProgressUpdate: setSubagentStates,
@@ -356,7 +358,7 @@ export function useAgent(
             systemPrompt: configRef.current.systemPrompt ?? "",
             permissionMode: configRef.current.permissionMode,
             effort: configRef.current.effort,
-            maxIterations: configRef.current.maxIterations,
+            iterationsBudget: currentIterationsBudgetRef.current ?? { remaining: configRef.current.maxIterations, total: configRef.current.maxIterations },
           }),
           confirmTool: skillConfirmCallback,
           onTokenUsage: (usage) => setTokenUsage((prev) => ({
@@ -548,6 +550,9 @@ export function useAgent(
       const trimmed = input.trim();
       if (!trimmed) return false;
       submitPendingRef.current = true;
+
+      currentIterationsBudgetRef.current = { remaining: config.maxIterations, total: config.maxIterations };
+      const iterationsBudget = currentIterationsBudgetRef.current;
 
       let expansion;
       try {
@@ -788,7 +793,7 @@ export function useAgent(
             systemPrompt: effectiveSystemPrompt,
             effort: config.effort,
             maxTokens: config.maxTokens,
-            maxIterations: config.maxIterations,
+            iterationsBudget: iterationsBudget,
             signal: abortController.signal,
             confirmTool: confirmToolCallback,
             permissionMode: sessionPermissionModeRef.current ?? config.permissionMode,
@@ -1267,5 +1272,6 @@ export function useAgent(
     transcriptRevision,
     turnStartTime,
     lastTurnDurationMs,
+    iterationsBudget:currentIterationsBudgetRef.current?? undefined,
   };
 }

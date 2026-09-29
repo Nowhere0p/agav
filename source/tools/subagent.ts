@@ -20,7 +20,7 @@ export interface SubagentToolDeps {
     systemPrompt: string;
     permissionMode: PermissionMode;
     effort: EffortLevel;
-    maxIterations: number;
+    iterationsBudget : { remaining : number , total:number}
   };
   confirmationQueue: ConfirmationQueue;
   onProgressUpdate: (subagents: SubagentProgress[]) => void;
@@ -212,7 +212,7 @@ export function createSubagentTool(deps: SubagentToolDeps): ToolDefinition & { c
           confirmTool,
           permissionMode: config.permissionMode,
           effort: config.effort,
-          maxIterations: config.maxIterations,
+          iterationsBudget:config.iterationsBudget,
         });
 
         const MAX_RECENT_ACTIONS = 10;
