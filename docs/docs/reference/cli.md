@@ -30,7 +30,7 @@ agav update [version]        # Update the installed release
 | `--stream` | Stream print-mode response text |
 | `--output-schema <json\|@file>` | Validate print-mode output against JSON Schema |
 | `--permission <json>` | Tool policy for `agav run` |
-| `--max-turns <number>` | Limit iterations in `agav run` |
+| `--max-turns <number>` | Limit iterations per agent turn in interactive and non-interactive modes |
 | `--resume`, `-r [id]` | Open the session picker or resume by ID prefix |
 | `--auto-accept`, `-y` | Skip normal tool confirmations |
 | `--openai-api` | OpenAI API mode: `responses` (default) or `chat`. Use `chat` for OpenAI-compatible endpoints that don't support the Responses API. |
