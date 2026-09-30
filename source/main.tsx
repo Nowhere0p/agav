@@ -716,6 +716,7 @@ export async function main() {
     return n;
   })();
 
+// Overwrites the config instance when maxTurns is explicitly provided.
   if (maxTurns !== undefined) {
     config.maxIterations = maxTurns
   }

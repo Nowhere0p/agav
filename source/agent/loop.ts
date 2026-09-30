@@ -196,7 +196,7 @@ export async function* runAgentLoop(
   }
   const maxIterations = Math.min(iterationsBudget.total, iterationsBudget.remaining);
   for (let iteration = 0; iteration < maxIterations && iterationsBudget.remaining > 0; iteration++) {
-    iterationsBudget.remaining--;
+    
     // Auto-compact if conversation is getting long
     const { compacted, droppedCount } = await conversation.compactIfNeeded(false, summarize);
     if (compacted) {
@@ -208,7 +208,7 @@ export async function* runAgentLoop(
     }
 
     // Graceful shutdown: on the last step, ask for a summary instead of hard-erroring
-    const isLastStep = iterationsBudget.remaining <= 0 || iteration === maxIterations - 1;
+    const isLastStep = iterationsBudget.remaining <= 1 || iteration === maxIterations - 1;
     if (isLastStep) {
       conversation.addInternalUserMessage(MAX_STEPS_PROMPT);
     }
@@ -307,7 +307,7 @@ export async function* runAgentLoop(
       };
       return;
     }
-
+    
     // Build assistant message content blocks
     const assistantContent: ContentBlock[] = [];
     if (textAccum) {
@@ -516,6 +516,9 @@ export async function* runAgentLoop(
       }
     } else if (hasTestRun) {
       testRepairAttempts = 0;
+    }
+    if(iterationsBudget){
+      iterationsBudget.remaining--
     }
   }
 
