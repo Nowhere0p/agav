@@ -48,7 +48,7 @@ Agav merges defaults, `~/.agav/config.json`, and `./.agav/config.json` in that o
 | `vertexAILocation` | Vertex AI region, or `global` for the multi-region endpoint (default `global`). Can also be set with `VERTEX_AI_LOCATION`. |
 | `effort` | `low`, `medium`, `high`, or `max`; invalid values fall back to `medium` |
 | `maxTokens` | Maximum output tokens per model response |
-| `maxIterations` | Maximum agent/tool iterations; must be a positive integer; can be overridden at startup with `--max-turns` for the current session  |
+| `maxIterations` | Maximum agent/tool iterations per prompt; must be a positive integer; can be overridden at startup with `--max-turns` for the current session |
 | `errorRetries` | Transient provider retries; must be zero or greater |
 | `permissionMode` | `ask`, `auto-accept`, or `deny-writes` |
 | `sandboxRequired` | When `true`, refuse to start if no OS-level sandbox (Seatbelt, Bubblewrap, or Docker) is available |
