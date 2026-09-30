@@ -146,6 +146,9 @@ interface UseAgentReturn {
   loadSession: (session: SessionRecord) => void;
   activateSession: (id: string, name?: string) => void;
   renameSession: (name: string) => void;
+  isGenerationPaused: boolean;
+  togglePause: () => void;
+  interveneWhilePaused: (input: string, extraBlocks?: ContentBlock[], displayText?: string, followUpMessages?: DisplayMessage[], invocationReason?: InvocationReason) => Promise<boolean>;
   sessionId: string | undefined;
   sessionName: string | undefined;
   transcriptRevision: number;
@@ -256,6 +259,27 @@ export function useAgent(
   const toolRegistryRef = useRef(createToolRegistry());
   const mcpManagerRef = useRef(new MCPManager());
   const abortRef = useRef<AbortController | null>(null);
+  
+  const isPausedRef = useRef(false);
+  const pausePromiseRef = useRef<{ promise: Promise<void>; resolve: () => void } | null>(null);
+  const [isGenerationPaused, setIsGenerationPaused] = useState(false);
+
+  const togglePause = useCallback(() => {
+    if (isPausedRef.current) {
+      isPausedRef.current = false;
+      setIsGenerationPaused(false);
+      pausePromiseRef.current?.resolve();
+      pausePromiseRef.current = null;
+    } else {
+      isPausedRef.current = true;
+      setIsGenerationPaused(true);
+      let r!: () => void;
+      const p = new Promise<void>((resolve) => { r = resolve; });
+      pausePromiseRef.current = { promise: p, resolve: r };
+    }
+  }, []);
+
+
   const submitPendingRef = useRef(false);
   const configRef = useRef(config);
   configRef.current = config;
@@ -410,6 +434,12 @@ export function useAgent(
   const cancel = useCallback(() => {
     abortRef.current?.abort();
     confirmationQueueRef.current.clear();
+    if (pausePromiseRef.current) {
+      pausePromiseRef.current.resolve();
+      pausePromiseRef.current = null;
+    }
+    isPausedRef.current = false;
+    setIsGenerationPaused(false);
   }, []);
 
   /** Cancel a single subagent by its ID while leaving others running. */
@@ -648,7 +678,8 @@ export function useAgent(
                 toolRegistryRef.current.register(agentToTool(agent, {
                   provider,
                   config: configRef.current,
-                  onProgressUpdate: (callId, event) => {
+                  onProgressUpdate: async (callId, event) => {
+                    if (pausePromiseRef.current) await pausePromiseRef.current.promise;
                     if (!trackerCache.has(callId)) {
                       trackerCache.set(callId, makeAgentProgressTracker(
                         callId,
@@ -709,6 +740,7 @@ export function useAgent(
               maxTokens: config.maxTokens,
               signal: abortController.signal,
             })) {
+              if (pausePromiseRef.current) await pausePromiseRef.current.promise;
               if (event.type === "text_delta") planJson += event.text;
               if (event.type === "usage") {
                 setTokenUsage((prev) => ({
@@ -805,6 +837,7 @@ export function useAgent(
           });
 
           for await (const event of loop) {
+            if (pausePromiseRef.current) await pausePromiseRef.current.promise;
             switch (event.type) {
               case "thinking":
                 currentThinking += event.text;
@@ -1081,6 +1114,12 @@ export function useAgent(
         setPendingConfirmation(null);
         abortRef.current = null;
         submitPendingRef.current = false;
+        if (pausePromiseRef.current) {
+          pausePromiseRef.current.resolve();
+          pausePromiseRef.current = null;
+        }
+        isPausedRef.current = false;
+        setIsGenerationPaused(false);
       })();
       return true;
     },
@@ -1149,7 +1188,8 @@ export function useAgent(
             provider,
             config: configRef.current,
             signal: abortController.signal,
-            onProgressUpdate: (callId, event) => {
+            onProgressUpdate: async (callId, event) => {
+              if (pausePromiseRef.current) await pausePromiseRef.current.promise;
               if (!trackerCache.has(callId)) {
                 trackerCache.set(
                   callId,
@@ -1202,6 +1242,12 @@ export function useAgent(
           setPendingConfirmation(null);
           abortRef.current = null;
           submitPendingRef.current = false;
+          if (pausePromiseRef.current) {
+            pausePromiseRef.current.resolve();
+            pausePromiseRef.current = null;
+          }
+          isPausedRef.current = false;
+          setIsGenerationPaused(false);
         }
       })();
 
@@ -1232,6 +1278,32 @@ export function useAgent(
     }
   }, [isLoading, planContinueMsg, submit]);
 
+  const interveneWhilePaused = useCallback(
+    async (
+      input: string,
+      extraBlocks?: ContentBlock[],
+      displayText?: string,
+      followUpMessages?: DisplayMessage[],
+      invocationReason?: InvocationReason,
+    ): Promise<boolean> => {
+      if (!isPausedRef.current) return false;
+      const trimmed = input.trim();
+      if (!trimmed && (!extraBlocks || extraBlocks.length === 0)) return false;
+
+      // Abort the active stream and resolve the pause so the loop exits
+      cancel();
+      
+      // Wait for the aborted turn to clear its pending state completely
+      while (submitPendingRef.current) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+
+      // Start the new request
+      return submit(trimmed, extraBlocks, displayText, followUpMessages, invocationReason);
+    },
+    [cancel, submit]
+  );
+
   return {
     messages,
     streamingText,
@@ -1250,6 +1322,9 @@ export function useAgent(
     mcpPromptCount,
     subagentStates,
     activePlan,
+    isGenerationPaused,
+    togglePause,
+    interveneWhilePaused,
     refreshPlan,
     submit,
     submitToAgent,
