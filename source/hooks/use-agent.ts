@@ -154,7 +154,7 @@ interface UseAgentReturn {
   transcriptRevision: number;
   turnStartTime: number | null;
   lastTurnDurationMs: number | null;
-  iterationsBudget?: {remaining:number; total:number};
+  iterationsBudget?: { remaining: number; total: number };
 }
 
 /** Own the agent lifecycle, conversation state, tool events, persistence, and confirmations. */
@@ -221,7 +221,7 @@ export function useAgent(
   const sessionPermissionModeRef = useRef<AgavConfig["permissionMode"] | undefined>(undefined);
   const resetPlanContinue = () => { planContinueRef.current = { stepId: -1, attempts: 0 }; };
   const resumedRef = useRef(false);
-  const currentIterationsBudgetRef = useRef<{remaining:number; total:number} | null>(null);
+  const currentIterationsBudgetRef = useRef<{ remaining: number; total: number } | null>(null);
 
   const subagentToolRef = useRef<{ cancelSubagent: (id: string) => void } | null>(null);
   const confirmationQueueRef = useRef(new ConfirmationQueue());
@@ -259,7 +259,7 @@ export function useAgent(
   const toolRegistryRef = useRef(createToolRegistry());
   const mcpManagerRef = useRef(new MCPManager());
   const abortRef = useRef<AbortController | null>(null);
-  
+
   const isPausedRef = useRef(false);
   const pausePromiseRef = useRef<{ promise: Promise<void>; resolve: () => void } | null>(null);
   const [isGenerationPaused, setIsGenerationPaused] = useState(false);
@@ -1292,7 +1292,7 @@ export function useAgent(
 
       // Abort the active stream and resolve the pause so the loop exits
       cancel();
-      
+
       // Wait for the aborted turn to clear its pending state completely
       while (submitPendingRef.current) {
         await new Promise((resolve) => setTimeout(resolve, 10));
@@ -1347,6 +1347,6 @@ export function useAgent(
     transcriptRevision,
     turnStartTime,
     lastTurnDurationMs,
-    iterationsBudget:currentIterationsBudgetRef.current?? undefined,
+    iterationsBudget: currentIterationsBudgetRef.current ?? undefined,
   };
 }

@@ -27,7 +27,7 @@ export interface CommandContext {
   conversation: ConversationState
   config: AgavConfig
   provider?: LLMProvider,
-  iterationsBudget?: {remaining: number, total :number},
+  iterationsBudget?: { remaining: number, total: number },
   setModel: (model: string) => void
   setProvider: (provider: AgavConfig["provider"]) => void
   setEffort: (effort: import("../config/config.js").EffortLevel) => void

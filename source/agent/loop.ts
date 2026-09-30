@@ -67,7 +67,7 @@ interface LoopParams {
    * the loop simply never receives mid-turn steers.
    */
   drainSteers?: () => string[];
-  iterationsBudget?: {remaining : number, total : number}
+  iterationsBudget?: { remaining: number, total: number }
 }
 
 // Tools that never need confirmation because they cannot modify the working
@@ -94,9 +94,9 @@ function isAllowed(
 
   const primaryInput =
     toolName === "run_command" ? String(input.command ?? "")
-    : toolName === "edit_file" || toolName === "write_file" || toolName === "read_file"
-      ? String(input.path ?? "")
-      : "";
+      : toolName === "edit_file" || toolName === "write_file" || toolName === "read_file"
+        ? String(input.path ?? "")
+        : "";
 
   for (const rule of allowedTools) {
     if (!rule.includes(":")) {
@@ -196,7 +196,7 @@ export async function* runAgentLoop(
   }
   const maxIterations = Math.min(iterationsBudget.total, iterationsBudget.remaining);
   for (let iteration = 0; iteration < maxIterations && iterationsBudget.remaining > 0; iteration++) {
-    
+
     // Auto-compact if conversation is getting long
     const { compacted, droppedCount } = await conversation.compactIfNeeded(false, summarize);
     if (compacted) {
@@ -307,7 +307,7 @@ export async function* runAgentLoop(
       };
       return;
     }
-    
+
     // Build assistant message content blocks
     const assistantContent: ContentBlock[] = [];
     if (textAccum) {
@@ -428,7 +428,7 @@ export async function* runAgentLoop(
               // New file — no diff preview
             }
           }
-        } catch {}
+        } catch { }
 
         yield { type: "tool_confirmation_request", toolName: call.name, toolCallId: id, input, diffLines: previewDiff };
         const choice = await confirmTool(call.name, input, previewDiff, tool?.mcpServerName);
@@ -517,7 +517,7 @@ export async function* runAgentLoop(
     } else if (hasTestRun) {
       testRepairAttempts = 0;
     }
-    if(iterationsBudget){
+    if (iterationsBudget) {
       iterationsBudget.remaining--
     }
   }

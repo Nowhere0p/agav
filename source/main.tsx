@@ -273,7 +273,7 @@ export async function runPipeMode(
     let exitCode = 0;
     let madeEdits = false;
     const maxRetries = 3;
-    const iterationsBudget = {remaining: config.maxIterations,total: config.maxIterations};
+    const iterationsBudget = { remaining: config.maxIterations, total: config.maxIterations };
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       madeEdits = false;
       const loop = runAgentLoop({
@@ -715,7 +715,7 @@ export async function main() {
     return n;
   })();
 
-// Overwrites the config instance when maxTurns is explicitly provided.
+  // Overwrites the config instance when maxTurns is explicitly provided.
   if (maxTurns !== undefined) {
     config.maxIterations = maxTurns
   }

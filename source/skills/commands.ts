@@ -26,7 +26,7 @@ export function createSkillSlashCommand(skill: SkillDefinition): SlashCommand {
             systemPrompt: context.config.systemPrompt ?? "",
             permissionMode: context.config.permissionMode,
             effort: context.config.effort,
-            iterationsBudget :context.iterationsBudget?? {remaining :50,total:50},
+            iterationsBudget: context.iterationsBudget ?? { remaining: 50, total: 50 },
           });
           return { type: "message", text: result.output, _tokenUsage: result.tokenUsage, _isSkill: true } as any;
         } catch (err) {

@@ -724,7 +724,7 @@ export default function App({ config: initialConfig, keybindings, resumeMessages
           const extraBlocks: ContentBlock[] = attachments.map((attachment) => ({ ...attachment.contentBlock }));
           const llmText = trimmed || "See attached content";
           const imageIds = attachments.filter((a) => a.kind === "image").map((a) => a.id);
-          if (imageIds.length > 0) compactImageAttachments(imageIds).catch(() => {});
+          if (imageIds.length > 0) compactImageAttachments(imageIds).catch(() => { });
           setInput("");
           setAttachments([]);
           lastPasteRef.current = null;
@@ -803,7 +803,7 @@ export default function App({ config: initialConfig, keybindings, resumeMessages
             skillsTUIResolveRef.current = onDone;
             setSkillsTUIActive(true);
           },
-          iterationsBudget: iterationsBudget 
+          iterationsBudget: iterationsBudget
         },);
 
         setRunningSkillName(null);
@@ -1037,44 +1037,44 @@ export default function App({ config: initialConfig, keybindings, resumeMessages
             );
           }
 
-        return (
-          <Box flexDirection="column" marginBottom={1}>
-            {toolCalls
-              .filter((tc) => tc.toolName !== "subagent")
-              .map((tc, i) => (
-                <ToolCallDisplay key={`${tc.toolName}-${i}`} toolCall={tc} />
-              ))}
-            {subagentStates.map((sa, i) => {
-              const isSelected = i === selectedSubagentIdx;
-              return (
-                <Box key={sa.id}>
-                  {isSelected ? <Text color="cyan">{"▸ "}</Text> : <Text>{"  "}</Text>}
-                  <SubagentDisplay progress={sa} mode="compact" index={i} />
-                </Box>
-              );
-            })}
-            {(() => {
-              const pendingSubagents = toolCalls.filter((tc) => tc.toolName === "subagent" && tc.status === "running");
-              const spawning = pendingSubagents.length > 0 && subagentStates.length === 0;
-              if (spawning) {
-                const count = pendingSubagents.length;
+          return (
+            <Box flexDirection="column" marginBottom={1}>
+              {toolCalls
+                .filter((tc) => tc.toolName !== "subagent")
+                .map((tc, i) => (
+                  <ToolCallDisplay key={`${tc.toolName}-${i}`} toolCall={tc} />
+                ))}
+              {subagentStates.map((sa, i) => {
+                const isSelected = i === selectedSubagentIdx;
                 return (
-                  <Box>
-                    <Text dimColor>{"  "}</Text>
-                    <Text color="cyan"><Spinner />{" "}</Text>
-                    <Text dimColor>Spawning {count} subagent{count !== 1 ? "s" : ""}...</Text>
+                  <Box key={sa.id}>
+                    {isSelected ? <Text color="cyan">{"▸ "}</Text> : <Text>{"  "}</Text>}
+                    <SubagentDisplay progress={sa} mode="compact" index={i} />
                   </Box>
                 );
-              }
-              return null;
-            })()}
-            <StreamingResponse text={streamingText} thinkingText={thinkingText} isLoading={!pendingConfirmation} showThinking={showThinking} isPaused={isGenerationPaused} />
-            {hasSubagents && (
-              <Text dimColor>{"\n  "}↑↓: select · Enter: inspect · {formatKeybinding(keybindings, "cancel")}: cancel all</Text>
-            )}
-          </Box>
-        );
-      })()}
+              })}
+              {(() => {
+                const pendingSubagents = toolCalls.filter((tc) => tc.toolName === "subagent" && tc.status === "running");
+                const spawning = pendingSubagents.length > 0 && subagentStates.length === 0;
+                if (spawning) {
+                  const count = pendingSubagents.length;
+                  return (
+                    <Box>
+                      <Text dimColor>{"  "}</Text>
+                      <Text color="cyan"><Spinner />{" "}</Text>
+                      <Text dimColor>Spawning {count} subagent{count !== 1 ? "s" : ""}...</Text>
+                    </Box>
+                  );
+                }
+                return null;
+              })()}
+              <StreamingResponse text={streamingText} thinkingText={thinkingText} isLoading={!pendingConfirmation} showThinking={showThinking} isPaused={isGenerationPaused} />
+              {hasSubagents && (
+                <Text dimColor>{"\n  "}↑↓: select · Enter: inspect · {formatKeybinding(keybindings, "cancel")}: cancel all</Text>
+              )}
+            </Box>
+          );
+        })()}
 
         {showToolDetail && toolMessages.length > 0 && (
           <ToolDetailPanel
@@ -1147,71 +1147,71 @@ export default function App({ config: initialConfig, keybindings, resumeMessages
           />
         )}
 
-      {!pendingConfirmation && (
-        <Box marginTop={1}><InputPrompt
-          value={input}
-          onChange={(value) => {
-            // A matching paste only expands the tile it just created. Once
-            // the prompt has changed, an identical paste elsewhere is a new
-            // attachment rather than an instruction to replace that tile.
-            lastPasteRef.current = null;
-            setInput(value);
-          }}
-          onSubmit={handleSubmit}
-          onPaste={handlePaste}
-          onRemoveAttachment={() => {
-            setAttachments((prev) => prev.slice(0, -1));
-            lastPasteRef.current = null;
-          }}
-          onClearAttachments={() => {
-            setAttachments([]);
-            lastPasteRef.current = null;
-          }}
-          onRegisterInsert={(fn) => { insertLabelRef.current = fn; }}
-          onRegisterExpand={(fn) => { expandTileRef.current = fn; }}
-          onOpenAttachment={handleOpenAttachment}
-          disabled={pickerActive}
-          suppressHistory={isLoading}
-          commands={[
-            { name: "ps", description: "Side query while agent is working" },
-            ...commandRegistryRef.current.list().map((c) => ({
+        {!pendingConfirmation && (
+          <Box marginTop={1}><InputPrompt
+            value={input}
+            onChange={(value) => {
+              // A matching paste only expands the tile it just created. Once
+              // the prompt has changed, an identical paste elsewhere is a new
+              // attachment rather than an instruction to replace that tile.
+              lastPasteRef.current = null;
+              setInput(value);
+            }}
+            onSubmit={handleSubmit}
+            onPaste={handlePaste}
+            onRemoveAttachment={() => {
+              setAttachments((prev) => prev.slice(0, -1));
+              lastPasteRef.current = null;
+            }}
+            onClearAttachments={() => {
+              setAttachments([]);
+              lastPasteRef.current = null;
+            }}
+            onRegisterInsert={(fn) => { insertLabelRef.current = fn; }}
+            onRegisterExpand={(fn) => { expandTileRef.current = fn; }}
+            onOpenAttachment={handleOpenAttachment}
+            disabled={pickerActive}
+            suppressHistory={isLoading}
+            commands={[
+              { name: "ps", description: "Side query while agent is working" },
+              ...commandRegistryRef.current.list().map((c) => ({
+                name: c.name,
+                description: c.description,
+                category: c.description.startsWith("[agent]") ? "agent" as const : "command" as const,
+              })),
+            ]}
+            keybindings={keybindings}
+            enhancedKeyboard={enhancedKeyboard}
+            resumeUserMessages={resumeUserMessages}
+            agentLock={agentLockState?.name}
+            agentNames={agentCommands.map((c) => ({
               name: c.name,
-              description: c.description,
-              category: c.description.startsWith("[agent]") ? "agent" as const : "command" as const,
-            })),
-          ]}
-          keybindings={keybindings}
-          enhancedKeyboard={enhancedKeyboard}
-          resumeUserMessages={resumeUserMessages}
-          agentLock={agentLockState?.name}
-          agentNames={agentCommands.map((c) => ({
-            name: c.name,
-            description: c.description.replace("[agent] ", ""),
-          }))}
-        /></Box>
-      )}
+              description: c.description.replace("[agent] ", ""),
+            }))}
+          /></Box>
+        )}
 
-      <StatusBar
-        isPaused={isGenerationPaused || !!pendingConfirmation}
-        model={config.model}
-        provider={config.provider}
-        effort={config.effort}
-        messageCount={messages.filter((m) => m.role === "user").length}
-        inputTokens={tokenUsage.inputTokens}
-        outputTokens={tokenUsage.outputTokens}
-        cacheReadTokens={tokenUsage.cacheReadTokens}
-        cacheWriteTokens={tokenUsage.cacheWriteTokens}
-        hint={useMemo(() => getRandomHint(keybindings, enhancedKeyboard), [messages.length, keybindings, enhancedKeyboard])}
-        psResponse={psResponse}
-        psLoading={psLoading}
-        loopStatus={(() => { const ls = getLoopStatus(); return ls ? `⟳ Loop: "${ls.prompt}" every ${ls.interval} (tick #${ls.tickCount})` : undefined; })()}
-        sandboxBackend={getSandboxName()}
-        branchName={sessionName ?? (sessionId ? sessionId.slice(0, 8) : undefined)}
-        turnStartTime={turnStartTime}
-        lastTurnDurationMs={lastTurnDurationMs}
-        isLoading={isLoading}
-        agentLock={agentLockState ?? undefined}
-      />
+        <StatusBar
+          isPaused={isGenerationPaused || !!pendingConfirmation}
+          model={config.model}
+          provider={config.provider}
+          effort={config.effort}
+          messageCount={messages.filter((m) => m.role === "user").length}
+          inputTokens={tokenUsage.inputTokens}
+          outputTokens={tokenUsage.outputTokens}
+          cacheReadTokens={tokenUsage.cacheReadTokens}
+          cacheWriteTokens={tokenUsage.cacheWriteTokens}
+          hint={useMemo(() => getRandomHint(keybindings, enhancedKeyboard), [messages.length, keybindings, enhancedKeyboard])}
+          psResponse={psResponse}
+          psLoading={psLoading}
+          loopStatus={(() => { const ls = getLoopStatus(); return ls ? `⟳ Loop: "${ls.prompt}" every ${ls.interval} (tick #${ls.tickCount})` : undefined; })()}
+          sandboxBackend={getSandboxName()}
+          branchName={sessionName ?? (sessionId ? sessionId.slice(0, 8) : undefined)}
+          turnStartTime={turnStartTime}
+          lastTurnDurationMs={lastTurnDurationMs}
+          isLoading={isLoading}
+          agentLock={agentLockState ?? undefined}
+        />
       </Box>
     </Box>
   );
