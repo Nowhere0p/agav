@@ -1,4 +1,3 @@
-import React from "react";
 import { render } from "./ink/index.js";
 import App from "./app.js";
 import { isEffortLevel, loadConfig, type AgavConfig } from "./config/config.js";

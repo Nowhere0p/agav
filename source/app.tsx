@@ -1,5 +1,4 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import { basename } from "node:path";
 import { Box, Text, ScrollBox, Spinner, useInput, useApp, useStdout, measureElement } from "./ink/index.js";
 import type { DOMElement, ScrollBoxControls, WheelEventData } from "./ink/index.js";
 import MessageList from "./components/message-list.js";
@@ -22,7 +21,6 @@ import { isInternalUserMessage } from "./agent/internal-prompts.js";
 import { CommandRegistry, isCommandAllowedMidTurn } from "./commands/registry.js";
 import { AgentsTUI } from "./components/agents-tui.js";
 import { SkillsTUI } from "./components/skills-tui.js";
-import { saveSession } from "./config/history.js";
 import {
   type Attachment,
   createTextAttachment,
