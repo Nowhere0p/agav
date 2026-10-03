@@ -581,8 +581,10 @@ export function useAgent(
       if (!trimmed) return false;
       submitPendingRef.current = true;
 
-      currentIterationsBudgetRef.current = { remaining: config.maxIterations, total: config.maxIterations };
-      const iterationsBudget = currentIterationsBudgetRef.current;
+      if (!displayText) {
+        currentIterationsBudgetRef.current = { remaining: config.maxIterations, total: config.maxIterations };
+      }
+      const iterationsBudget = currentIterationsBudgetRef.current ?? { remaining: config.maxIterations, total: config.maxIterations };
 
       let expansion;
       try {

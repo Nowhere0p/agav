@@ -66,6 +66,15 @@ function findClosestFlag(input: string): string | undefined {
   return best;
 }
 
+ function parseMaxTurns(raw?: string): number | undefined {
+    if (!raw) return undefined;
+    const n = Number.parseInt(raw.trim(), 10);
+    if (!Number.isInteger(n) || n <= 0) {
+      process.stderr.write("Error: --max-turns must be a positive integer\n");
+      process.exit(1);
+    }
+    return n;
+  }
 /** Choose between providers which expose the same model during interactive startup. */
 function pickProviderForModel(model: string, matches: FetchedModel[]): Promise<FetchedModel | null> {
   const stdin = process.stdin;
@@ -702,18 +711,7 @@ export async function main() {
   }
 
   startupFinished = true;
-  const maxTurns: number | undefined = (() => {
-    const raw = typeof flags.maxTurns === "string"
-      ? flags.maxTurns.trim()
-      : "";
-    if (!raw) return undefined;
-    const n = Number.parseInt(raw, 10);
-    if (!Number.isInteger(n) || n <= 0) {
-      process.stderr.write("Error: --max-turns must be a positive integer\n");
-      process.exit(1);
-    }
-    return n;
-  })();
+  const maxTurns: number | undefined = parseMaxTurns(typeof flags.maxTurns === "string"? flags.maxTurns.trim(): "");
 
   // Overwrites the config instance when maxTurns is explicitly provided.
   if (maxTurns !== undefined) {

@@ -133,7 +133,11 @@ export async function* runAgentLoop(
   let lastShellFailed = false;
   let verifyReprompts = 0;
   const MAX_VERIFY_REPROMPTS = 2;
-  const iterationsBudget = params.iterationsBudget ?? { remaining: 50, total: 50 }; // silent fallback
+
+  if (!params.iterationsBudget) {
+      throw new Error("iterationsBudget is required");
+  }
+  const iterationsBudget = params.iterationsBudget;
 
 
   // Calls the user has already refused, keyed by name + arguments. Scoped to
@@ -197,6 +201,9 @@ export async function* runAgentLoop(
   const maxIterations = Math.min(iterationsBudget.total, iterationsBudget.remaining);
   for (let iteration = 0; iteration < maxIterations && iterationsBudget.remaining > 0; iteration++) {
 
+    if (iterationsBudget) {
+      iterationsBudget.remaining--
+    }
     // Auto-compact if conversation is getting long
     const { compacted, droppedCount } = await conversation.compactIfNeeded(false, summarize);
     if (compacted) {
@@ -208,11 +215,11 @@ export async function* runAgentLoop(
     }
 
     // Graceful shutdown: on the last step, ask for a summary instead of hard-erroring
-    const isLastStep = iterationsBudget.remaining <= 1 || iteration === maxIterations - 1;
+    const isLastStep = iterationsBudget.remaining <= 0 || iteration === maxIterations - 1;
     if (isLastStep) {
       conversation.addInternalUserMessage(MAX_STEPS_PROMPT);
     }
-
+    
     let textAccum = "";
     const toolCalls = new Map<
       string,
@@ -516,9 +523,6 @@ export async function* runAgentLoop(
       }
     } else if (hasTestRun) {
       testRepairAttempts = 0;
-    }
-    if (iterationsBudget) {
-      iterationsBudget.remaining--
     }
   }
 

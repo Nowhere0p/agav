@@ -120,12 +120,15 @@ export async function executeSkill(
   args: string,
   deps: SkillExecDeps,
 ): Promise<SkillExecResult> {
+  if (!deps.iterationsBudget) {
+    throw new Error("iterationsBudget is required");
+  }
   let prompt = processDynamicContext(skill.body, args);
   prompt = await processShellBlocks(prompt, {
     permissionMode: deps.permissionMode,
     confirmTool: deps.confirmTool,
   });
-
+ 
   const registry = buildSkillRegistry(deps.parentRegistry, skill);
   const conversation = new ConversationState();
   conversation.setModel(deps.model);
@@ -152,7 +155,7 @@ export async function executeSkill(
     signal: deps.signal,
     confirmTool: deps.confirmTool,
     permissionMode: deps.permissionMode,
-    iterationsBudget: deps.iterationsBudget ?? { remaining: 50, total: 50 },
+    iterationsBudget: deps.iterationsBudget,
   });
 
   let result = "";
