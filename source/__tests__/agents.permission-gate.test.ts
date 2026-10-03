@@ -9,6 +9,7 @@ import { ToolRegistry } from "../tools/registry.js";
 import type { LLMProvider, StreamEvent, StreamParams } from "../providers/types.js";
 import type { ToolDefinition } from "../tools/types.js";
 import type { AgentEvent } from "../agent/loop.js";
+import { removeAllListeners } from "node:cluster";
 
 class MockProvider implements LLMProvider {
   streams: StreamEvent[][];
@@ -89,7 +90,7 @@ describe("permission gate: destructive flag trust", () => {
         maxTokens: 1000,
         confirmTool,
         permissionMode: "ask",
-        iterationsBudget: {remaining : 10,total : 10},
+        iterationsBudget: {remaining : 5, total: 5},
       })
     );
 
@@ -122,8 +123,7 @@ describe("permission gate: destructive flag trust", () => {
     await expect(executeNativeAgent(agent, "write it", {
       provider,
       config: { model: "mock", effort: "low", maxTokens: 1000 } as any,
-      permissionMode: "auto-accept",
-      iterationsBudget: {remaining: 5, total: 10}
+      permissionMode: "auto-accept",iterationsBudget: {remaining:5,total:5}
     })).resolves.toBe("Done");
 
     expect(tool.execute).toHaveBeenCalled();
@@ -139,7 +139,7 @@ describe("permission gate: destructive flag trust", () => {
     await executeNativeAgent({
       manifest: { name: "signal-test", description: "test", version: "1.0.0" },
       systemPrompt: "test", tools: [tool], origin: "bundled", path: cwd,
-    }, "inspect", { provider, config: { model: "mock", effort: "low", maxTokens: 1000 } as any, signal: controller.signal, permissionMode: "auto-accept" });
+    }, "inspect", { provider, config: { model: "mock", effort: "low", maxTokens: 1000,  } as any, signal: controller.signal, permissionMode: "auto-accept",iterationsBudget: {remaining : 5, total:5} });
     expect(tool.execute).toHaveBeenCalledWith({}, { env: {}, signal: controller.signal });
   });
 
@@ -175,7 +175,7 @@ describe("permission gate: destructive flag trust", () => {
         effort: "low",
         maxTokens: 1000,
         permissionMode: "deny-writes",
-        iterationsBudget: {remaining : 10,total : 10},
+        iterationsBudget: {remaining :5 , total : 5},
       })
     );
 
