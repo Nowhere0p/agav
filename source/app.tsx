@@ -12,6 +12,8 @@ import ToolConfirm from "./components/tool-confirm.js";
 import ToolDetailPanel from "./components/tool-detail-panel.js";
 import PlanDetailPanel from "./components/plan-detail-panel.js";
 import SubagentDisplay from "./components/subagent-display.js";
+import { makeAgentProgressTracker } from "./agent/subagent-progress.js";
+import type { SubagentProgress } from "./agent/subagent-types.js";
 import type { AgavConfig } from "./config/config.js";
 import type { LLMProvider } from "./providers/types.js";
 import { createProvider } from "./providers/registry.js";
@@ -136,6 +138,7 @@ export default function App({ config: initialConfig, keybindings, resumeMessages
   }, []);
   const [showCompactionSummary, setShowCompactionSummary] = useState(false);
   const [runningSkillName, setRunningSkillName] = useState<string | null>(null);
+  const [skillProgress, setSkillProgress] = useState<SubagentProgress[]>([]);
   const [pickerActive, setPickerActive] = useState(false);
   const [agentsTUIActive, setAgentsTUIActive] = useState(false);
   const agentsTUIResolveRef = useRef<(() => void) | null>(null);
@@ -792,7 +795,13 @@ export default function App({ config: initialConfig, keybindings, resumeMessages
           handleSubmit,
           toolRegistry,
           addTokenUsage,
-          setRunningSkill: setRunningSkillName,
+          setRunningSkill: (name) => {
+            setSkillProgress([]);
+            setRunningSkillName(name);
+          },
+          createSkillProgressTracker: (title, task) => makeAgentProgressTracker(
+            `skill-${++sysMessageId}`, title, task, setSkillProgress,
+          ),
           setPickerActive,
           suspendTerminal: suspendTerminalSync,
           showAgentsTUI: (onDone: () => void) => {
@@ -972,13 +981,21 @@ export default function App({ config: initialConfig, keybindings, resumeMessages
           </Box>
         )}
 
-        {runningSkillName && (
-          <Box marginBottom={1}>
-            <Text dimColor>{"  "}</Text>
-            <Text color="cyan"><Spinner /></Text>
-            <Text dimColor> Running skill: {runningSkillName}...</Text>
-          </Box>
-        )}
+      {runningSkillName && (
+        <Box marginBottom={1} flexDirection="column">
+          {skillProgress.length > 0 ? (
+            skillProgress.map((progress) => (
+              <SubagentDisplay key={progress.id} progress={progress} mode="detail" />
+            ))
+          ) : (
+            <Box>
+              <Text dimColor>{"  "}</Text>
+              <Text color="cyan"><Spinner /></Text>
+              <Text dimColor> Running skill: {runningSkillName}...</Text>
+            </Box>
+          )}
+        </Box>
+      )}
 
         {activePlan && activePlan.steps.length > 0 && (
           <Box flexDirection="column" marginBottom={1} marginLeft={2}>
