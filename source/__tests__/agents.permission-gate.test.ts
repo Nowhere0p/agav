@@ -89,7 +89,7 @@ describe("permission gate: destructive flag trust", () => {
         maxTokens: 1000,
         confirmTool,
         permissionMode: "ask",
-        iterationsBudget: {remaining : 5,total : 5},
+        iterationsBudget: {remaining : 10,total : 10},
       })
     );
 
@@ -175,7 +175,7 @@ describe("permission gate: destructive flag trust", () => {
         effort: "low",
         maxTokens: 1000,
         permissionMode: "deny-writes",
-        iterationsBudget: {remaining : 5,total : 5},
+        iterationsBudget: {remaining : 10,total : 10},
       })
     );
 
