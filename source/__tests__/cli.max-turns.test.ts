@@ -72,7 +72,7 @@ describe("--max-turns production CLI", () => {
     await invoke([mode, "fix the bug", "--max-turns=2"]);
     expect(process.exit).toHaveBeenCalledWith(1); // The retry cannot obtain a third request.
     expect(provider.stream).toHaveBeenCalledTimes(2);
-    expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining("maximum iterations"));
+    expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining("Iteration budget exhausted"));
     expect(render).not.toHaveBeenCalled();
   });
 
