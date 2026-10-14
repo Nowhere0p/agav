@@ -50,7 +50,7 @@ describe("print-mode prompt iteration budget", () => {
     expect(await runPipeMode("Return a result", config, provider, { stdinContent: "", outputSchema: schema, stream: true })).toBe(1);
     expect(provider.stream).toHaveBeenCalledTimes(1);
     expect(stdout()).toBe("");
-    expect(stderr()).toMatch(/JSON Schema validation.*maximum iterations/);
+    expect(stderr()).toMatch(/JSON Schema validation.*Iteration budget exhausted/);
     expect(stderr()).not.toContain("retrying once");
   });
 
@@ -82,7 +82,7 @@ describe("print-mode prompt iteration budget", () => {
     const provider = providerFor([text("Analysis only"), text("Still no edits")]);
     expect(await runPipeMode("Fix the fixture", { ...config, maxIterations }, provider, { stdinContent: "" })).toBe(1);
     expect(provider.stream).toHaveBeenCalledTimes(maxIterations);
-    expect(stderr()).toContain("Agent reached maximum iterations");
+    expect(stderr()).toContain("skipping no-edit retry");
   });
 
   it("accepts valid output on the last request without a retry", async () => {
