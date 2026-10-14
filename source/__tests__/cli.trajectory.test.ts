@@ -248,7 +248,7 @@ describe("real pipe-mode trajectory export", () => {
     provider = providerFor([text("not JSON")]);
     expect(await runPipeMode("Return a result", { ...config, maxIterations: 1 }, provider, options({ outputSchema: schema }))).toBe(1);
     expect(provider.stream).toHaveBeenCalledTimes(1);
-    expect(stderr()).toMatch(/JSON Schema validation.*maximum iterations/);
+    expect(stderr()).toMatch(/JSON Schema validation.*Iteration budget exhausted/);
     expect((await exported()).usage).toEqual(zeroUsage);
   });
 
