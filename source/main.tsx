@@ -425,11 +425,18 @@ export async function runPipeMode(
 
       // If the agent made edits or errored out, we're done
       if (madeEdits || exitCode !== 0 || attempt >= maxRetries) break;
-
+      
       // Only re-prompt for edits if the user's prompt (not piped content) implies a change
       const expectsEdits = /\b(fix|patch|change|update|modify|edit|write|add|remove|delete|refactor|implement|create|replace|rewrite|migrate)\b/.test(prompt.toLowerCase());
       if (!expectsEdits) break;
 
+      // Stop instead of queuing another agent request once the allowance is exhausted.
+      if (iterationsBudget.remaining <= 0) {
+        process.stderr.write(`  ${icons.warning} Iteration budget exhausted (--max-turns=${config.maxIterations}); skipping no-edit retry.\n`);
+        exitCode = 1;
+        break;
+      }
+      
       // Re-prompt: agent analyzed but didn't edit
       process.stderr.write(`  ${icons.warning} No edits made — re-prompting (attempt ${attempt + 2}/${maxRetries + 1})...\n`);
       conversation.addInternalUserMessage(NO_EDITS_PROMPT);
@@ -452,19 +459,19 @@ export async function runPipeMode(
         return 1;
       }
 
-      let validation = validateOutput(result.finalText, validate);
-      if (!validation.valid) {
-        const details = formatValidationErrors(validation);
-        if (iterationsBudget.remaining <= 0) {
-          process.stderr.write(`Error: Response failed JSON Schema validation; cannot retry because the agent reached maximum iterations: ${details}\n`);
-          return 1;
-        }
-        process.stderr.write(`Schema validation failed; retrying once: ${details}\n`);
-        conversation.addInternalUserMessage(schemaRetryPrompt(details));
-        result = await runTurn(false);
-        if (result.exitCode !== 0) return result.exitCode;
-        validation = validateOutput(result.finalText, validate);
+    let validation = validateOutput(result.finalText, validate);
+    if (!validation.valid) {
+      const details = formatValidationErrors(validation);
+      if (iterationsBudget.remaining <= 0) {
+        process.stderr.write(`Error: Response failed JSON Schema validation: ${details}. Iteration budget exhausted (--max-turns=${config.maxIterations}); skipping schema-correction retry.\n`);
+        return 1;
       }
+      process.stderr.write(`Schema validation failed; retrying once: ${details}\n`);
+      conversation.addInternalUserMessage(schemaRetryPrompt(details));
+      result = await runTurn(false);
+      if (result.exitCode !== 0) return result.exitCode;
+      validation = validateOutput(result.finalText, validate);
+    }
 
       if (!validation.valid) {
         process.stderr.write(`Error: Response failed JSON Schema validation after retry: ${formatValidationErrors(validation)}\n`);
