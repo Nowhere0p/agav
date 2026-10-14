@@ -6,14 +6,16 @@ import type { LLMProvider, StreamEvent, StreamParams } from "../providers/types.
 vi.mock("../tools/registry-factory.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../tools/registry-factory.js")>();
   const { ToolRegistry } = await import("../tools/registry.js");
-  return { ...actual, createToolRegistry: () => {
-    const registry = new ToolRegistry();
-    registry.register({
-      schema: { name: "read_file", description: "Read a fixture", inputSchema: { type: "object" } },
-      execute: async () => ({ output: "fixture", isError: false }),
-    });
-    return registry;
-  } };
+  return {
+    ...actual, createToolRegistry: () => {
+      const registry = new ToolRegistry();
+      registry.register({
+        schema: { name: "read_file", description: "Read a fixture", inputSchema: { type: "object" } },
+        execute: async () => ({ output: "fixture", isError: false }),
+      });
+      return registry;
+    }
+  };
 });
 
 const schema = { type: "object", properties: { ok: { type: "boolean" } }, required: ["ok"] };

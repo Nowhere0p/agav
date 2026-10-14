@@ -144,7 +144,7 @@ export function parseArgs(argv: string[]) {
       i++;
       continue;
     }
-    
+
     if (arg === "--help" || arg === "-h") {
       flags.help = true;
     } else if (arg === "--version" || arg === "-v") {
@@ -286,10 +286,10 @@ export function parseArgs(argv: string[]) {
   if (flags.mcp && pos.length > 0) flags.mcpCommand = pos[0];
   if (flags.run && pos.length > 0) flags.runPrompt = pos.join(" ");
   if (flags.print && pos.length > 0) flags.printPrompt = pos.join(" ");
-  
+
   if (!flags.update && !flags.agents && !flags.skills && !flags.mcp && !flags.run && !flags.print && pos.length > 0) {
-     process.stderr.write(`error: unexpected arguments: ${pos.join(" ")}\n`);
-     process.exit(1);
+    process.stderr.write(`error: unexpected arguments: ${pos.join(" ")}\n`);
+    process.exit(1);
   }
 
   return flags;
@@ -425,7 +425,7 @@ export async function runPipeMode(
 
       // If the agent made edits or errored out, we're done
       if (madeEdits || exitCode !== 0 || attempt >= maxRetries) break;
-      
+
       // Only re-prompt for edits if the user's prompt (not piped content) implies a change
       const expectsEdits = /\b(fix|patch|change|update|modify|edit|write|add|remove|delete|refactor|implement|create|replace|rewrite|migrate)\b/.test(prompt.toLowerCase());
       if (!expectsEdits) break;
@@ -436,7 +436,7 @@ export async function runPipeMode(
         exitCode = 1;
         break;
       }
-      
+
       // Re-prompt: agent analyzed but didn't edit
       process.stderr.write(`  ${icons.warning} No edits made — re-prompting (attempt ${attempt + 2}/${maxRetries + 1})...\n`);
       conversation.addInternalUserMessage(NO_EDITS_PROMPT);
@@ -459,19 +459,19 @@ export async function runPipeMode(
         return 1;
       }
 
-    let validation = validateOutput(result.finalText, validate);
-    if (!validation.valid) {
-      const details = formatValidationErrors(validation);
-      if (iterationsBudget.remaining <= 0) {
-        process.stderr.write(`Error: Response failed JSON Schema validation: ${details}. Iteration budget exhausted (--max-turns=${config.maxIterations}); skipping schema-correction retry.\n`);
-        return 1;
+      let validation = validateOutput(result.finalText, validate);
+      if (!validation.valid) {
+        const details = formatValidationErrors(validation);
+        if (iterationsBudget.remaining <= 0) {
+          process.stderr.write(`Error: Response failed JSON Schema validation: ${details}. Iteration budget exhausted (--max-turns=${config.maxIterations}); skipping schema-correction retry.\n`);
+          return 1;
+        }
+        process.stderr.write(`Schema validation failed; retrying once: ${details}\n`);
+        conversation.addInternalUserMessage(schemaRetryPrompt(details));
+        result = await runTurn(false);
+        if (result.exitCode !== 0) return result.exitCode;
+        validation = validateOutput(result.finalText, validate);
       }
-      process.stderr.write(`Schema validation failed; retrying once: ${details}\n`);
-      conversation.addInternalUserMessage(schemaRetryPrompt(details));
-      result = await runTurn(false);
-      if (result.exitCode !== 0) return result.exitCode;
-      validation = validateOutput(result.finalText, validate);
-    }
 
       if (!validation.valid) {
         process.stderr.write(`Error: Response failed JSON Schema validation after retry: ${formatValidationErrors(validation)}\n`);
@@ -535,7 +535,7 @@ export async function main() {
     const { resolve } = await import("node:path");
     const { statSync } = await import("node:fs");
     const targetDir = resolve(process.cwd(), flags.cwd);
-    
+
     let isDir = false;
     try {
       isDir = statSync(targetDir).isDirectory();
