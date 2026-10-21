@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { main, parseArgs } from "../main.js";
 import { loadConfig, type AgavConfig } from "../config/config.js";
+import { loadOrgPolicy } from "../config/org-config.js";
 import { createProvider } from "../providers/registry.js";
 import { listSessions } from "../config/history.js";
 import {
@@ -19,6 +20,10 @@ vi.mock("../config/history.js", () => ({ listSessions: vi.fn(async () => []) }))
 vi.mock("../providers/registry.js", () => ({ createProvider: vi.fn() }));
 vi.mock("../utils/auto-update.js", () => ({ checkAndUpdate: vi.fn() }));
 vi.mock("../utils/temp-output.js", () => ({ tempOutputManager: { pruneStale: vi.fn() } }));
+vi.mock("../config/org-config.js", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../config/org-config.js")>(),
+  loadOrgPolicy: vi.fn(async () => ({})),
+}));
 
 const originalArgv = process.argv;
 const exitError = new Error("process exited");
@@ -39,6 +44,7 @@ beforeEach(() => {
     permissionMode: "ask", systemPrompt: "test prompt",
   };
   vi.mocked(loadConfig).mockResolvedValue(config);
+  vi.mocked(loadOrgPolicy).mockResolvedValue({});
   vi.mocked(createProvider).mockImplementation(() => { throw providerReached; });
 });
 afterEach(() => {
@@ -120,10 +126,28 @@ describe("-c/--config flag parsing", () => {
     ["-c", "search=maybe"],
     ["-c", "allowedTools=oops"],
     ["-c", "openaiApi=bogus"],
+    ["-c", "orgManagedProvider=ollama"],
+    ["-c", "orgPermissionFloor=auto-accept"],
+    ["-c", "openaiGatewayAuth=true"],
   ])("rejects %j with an actionable error", (...argv) => {
     expect(() => parseArgs(argv)).toThrow(exitError);
     expect(process.exit).toHaveBeenCalledWith(1);
     expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining("Error:"));
+  });
+
+  it.each(["orgAllowedModels", "orgAllowedProviders", "orgManagedProvider", "orgManagedModel", "orgPermissionFloor", "openaiGatewayAuth"])(
+    "rejects org-managed key %s with a policy message instead of a suggestion",
+    (key) => {
+      expect(() => parseConfigOverride(`${key}=anything`)).toThrow(exitError);
+      expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining("managed by organization policy"));
+    },
+  );
+
+  it("accepts controlPlane, the same source tier as --control-plane", () => {
+    expect(parseConfigOverride("controlPlane=https://cp.example")).toEqual({
+      path: ["controlPlane"],
+      value: "https://cp.example",
+    });
   });
 
   it("suggests the closest key for a typo", () => {
@@ -211,5 +235,21 @@ describe("-c/--config production CLI behavior", () => {
       if (descriptor) Object.defineProperty(process.stdin, "isTTY", descriptor);
       else delete (process.stdin as { isTTY?: boolean }).isTTY;
     }
+  });
+
+  it("re-asserts organization policy after applying -c overrides", async () => {
+    vi.mocked(loadOrgPolicy).mockResolvedValue({
+      config: { provider: "openai", openaiBaseURL: "https://gateway.corp.example/v1", permissionMode: "ask" },
+    });
+    config.openaiApiKey = "test-key";
+    process.argv = [process.execPath, "agav", "-P", "hello",
+      "-c", "provider=ollama", "-c", "openaiBaseURL=https://evil.example", "-c", "permissionMode=auto-accept"];
+    await expect(main()).rejects.toThrow(providerReached);
+    // Hard pin, gateway URL, and permission floor all outrank the -c layer.
+    expect(config.provider).toBe("openai");
+    expect(config.openaiBaseURL).toBe("https://gateway.corp.example/v1");
+    expect(config.permissionMode).toBe("ask");
+    expect(config.orgManagedProvider).toBe("openai");
+    expect(config.orgPermissionFloor).toBe("ask");
   });
 });

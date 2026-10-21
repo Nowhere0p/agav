@@ -1,9 +1,10 @@
 /**
  * Session-scoped overrides from the repeatable `-c key=value` / `--config key=value` flag.
  *
- * Precedence: defaults < global config < project config < env < `-c` < dedicated CLI flags.
- * Unlike project config files, the flag is explicit user intent and may set any key,
- * including fields on PROJECT_CONFIG_DENY. Values are never written back to disk.
+ * Precedence: defaults < global config < project config < env < `-c` < dedicated CLI flags
+ * < organization-managed policy (re-asserted after `-c` at startup). Unlike project config
+ * files, the flag is explicit user intent and may set any key, including fields on
+ * PROJECT_CONFIG_DENY. Values are never written back to disk.
  */
 import { PROJECT_CONFIG_TEMPLATE, type AgavConfig } from "./config.js";
 import { PROVIDERS } from "./startup.js";
@@ -27,8 +28,20 @@ interface KeySpec {
 const SESSION_ONLY_KEY_SPECS = {
   openaiApi: { type: "string", enum: ["chat", "responses"] },
   agentMarketplace: { type: "string" },
+  controlPlane: { type: "string" },
   statusBar: { type: "object" },
 } as const satisfies Record<string, KeySpec>;
+
+/**
+ * Org-policy enforcement state and the enrollment gateway marker: known to -c so typos
+ * get a precise message, but never settable — forging them would bypass org policy.
+ */
+const BLOCKED_KEYS = [
+  "orgAllowedModels", "orgAllowedProviders", "orgManagedProvider",
+  "orgManagedModel", "orgPermissionFloor", "openaiGatewayAuth",
+] as const;
+type BlockedConfigKey = (typeof BLOCKED_KEYS)[number];
+const BLOCKED_KEY_SET: ReadonlySet<string> = new Set<string>(BLOCKED_KEYS);
 
 const KEY_SPECS: Record<string, KeySpec> = {};
 for (const [key, spec] of Object.entries(PROJECT_CONFIG_TEMPLATE)) {
@@ -42,7 +55,10 @@ Object.assign(KEY_SPECS, SESSION_ONLY_KEY_SPECS);
 KEY_SPECS["provider"] = { type: "string", enum: PROVIDERS };
 
 /** tsc fails here if a new AgavConfig key is not covered by the schema tables above. */
-type CoveredConfigKey = keyof typeof PROJECT_CONFIG_TEMPLATE | keyof typeof SESSION_ONLY_KEY_SPECS;
+type CoveredConfigKey =
+  | keyof typeof PROJECT_CONFIG_TEMPLATE
+  | keyof typeof SESSION_ONLY_KEY_SPECS
+  | BlockedConfigKey;
 type AssertNever<T extends never> = T;
 export type ConfigOverrideCoverage = AssertNever<Exclude<keyof AgavConfig, CoveredConfigKey>>;
 
@@ -141,6 +157,9 @@ export function parseConfigOverride(raw: string | undefined): ConfigOverride {
     fail(`-c has an invalid key path ${JSON.stringify(keyPart)} (e.g. -c theme.promptColor=blue).`);
   }
   const top = path[0]!;
+  if (BLOCKED_KEY_SET.has(top)) {
+    fail(`-c ${top} is managed by organization policy and cannot be set from the command line.`);
+  }
   const spec = KEY_SPECS[top];
   if (!spec) {
     const suggestion = findClosest(top, Object.keys(KEY_SPECS));
