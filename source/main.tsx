@@ -580,7 +580,7 @@ export async function main() {
     $ cat file | agav -P "explain this"
 
   Options
-    --provider, -p       LLM provider: anthropic, openai, openrouter, gemini, vertex-ai, or ollama (default: anthropic)
+    --provider, -p       LLM provider: anthropic, openai, openrouter, nvidia, deepseek, gemini, vertex-ai, or ollama (default: anthropic)
     --model, -m          Model name (default: claude-sonnet-4-20250514 / gpt-4o / llama3.2)
     --name <title>       Set initial name for the session
     --cwd <dir>          Set the working directory for the session
