@@ -265,4 +265,37 @@ describe("config", () => {
     expect(body).toContain("enc:g");
     expect(body).toContain("enc:l");
   });
+
+  it("applies -c overrides over a loaded config, schema-validates them, and never persists them", async () => {
+    const overrides = await import("../config/cli-overrides.js");
+    const exit = vi.spyOn(process, "exit").mockImplementation(() => { throw new Error("exit"); });
+    const stderr = vi.spyOn(process.stderr, "write").mockReturnValue(true);
+    try {
+      readFile.mockImplementation(async (path: any) => {
+        if (String(path).endsWith("config.json")) {
+          return JSON.stringify({ effort: "low", maxIterations: 100 });
+        }
+        throw Object.assign(new Error("missing"), { code: "ENOENT" });
+      });
+
+      const mod = await import("../config/config.js");
+      const loaded = await mod.loadConfig();
+      expect(loaded.effort).toBe("low");
+
+      overrides.applyConfigOverrides(loaded, [overrides.parseConfigOverride("effort=high")]);
+      expect(loaded.effort).toBe("high");
+
+      // Unknown key and value outside the schema's enum are rejected.
+      expect(() => overrides.parseConfigOverride("efrot=high")).toThrow("exit");
+      expect(() => overrides.parseConfigOverride("effort=nope")).toThrow("exit");
+
+      const writesBefore = writeFile.mock.calls.length;
+      overrides.applyConfigOverrides(loaded, [overrides.parseConfigOverride("maxIterations=42")]);
+      expect(loaded.maxIterations).toBe(42);
+      expect(writeFile.mock.calls.length).toBe(writesBefore);
+    } finally {
+      exit.mockRestore();
+      stderr.mockRestore();
+    }
+  });
 });
