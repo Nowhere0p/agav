@@ -122,7 +122,7 @@ export function parseArgs(argv: string[]) {
       i++;
       continue;
     }
-    
+
     if ((arg === "--help" || arg === "-h") && flags.job) {
       // `agav job [tick|daemon] --help` is handled by job-cli's own usage output.
       flags._.push(arg);
@@ -306,8 +306,8 @@ export function parseArgs(argv: string[]) {
   }
 
   if (!flags.update && !flags.agents && !flags.skills && !flags.sessions && !flags.mcp && !flags.run && !flags.job && !flags.print && !flags.login && !flags.logout && pos.length > 0) {
-     process.stderr.write(`error: unexpected arguments: ${pos.join(" ")}\n`);
-     process.exit(1);
+    process.stderr.write(`error: unexpected arguments: ${pos.join(" ")}\n`);
+    process.exit(1);
   }
 
   return flags;
@@ -772,6 +772,12 @@ export async function main() {
   // -c/--config: session-only overlays over config files/env. Provider/model overrides
   // also pin against the last-session restore (but skip --model's catalog routing).
   const configOverrides = flags.configOverrides as ConfigOverride[] | undefined;
+
+  // Original pairing, captured before -c rewrites it: the startup resolver compares
+  // against this to detect a provider change and re-pick the model.
+  const providerBeforeOverrides = config.provider;
+  const modelBeforeOverrides = config.model;
+
   if (configOverrides?.length) {
     applyConfigOverrides(config, configOverrides);
     // Org policy outranks every CLI layer — re-run loadConfig's org tail so -c cannot
@@ -788,7 +794,7 @@ export async function main() {
     ? config.provider : undefined;
   const configOverrideModel = configOverrides?.some((o) => o.path.length === 1 && o.path[0] === "model")
     && typeof config.model === "string" && config.model
-      ? config.model : undefined;
+    ? config.model : undefined;
 
   let cliProvider: ProviderName | undefined;
   if (typeof flags.provider === "string") {
@@ -906,6 +912,13 @@ export async function main() {
       resumeSessionName = session.name;
       resumeSelection = session;
     }
+  }
+
+  // Restore the pre-(-c) pairing so the resolver's providerChanged check sees the change;
+  // -c provider/model travel as cliProvider/cliModel inputs instead.
+  if (configOverrides?.length) {
+    config.provider = providerBeforeOverrides;
+    config.model = modelBeforeOverrides;
   }
 
   Object.assign(config, await resolveStartupSelection(config, {

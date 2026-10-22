@@ -3,7 +3,7 @@ import { main, parseArgs } from "../main.js";
 import { loadConfig, type AgavConfig } from "../config/config.js";
 import { loadOrgPolicy } from "../config/org-config.js";
 import { createProvider } from "../providers/registry.js";
-import { listSessions } from "../config/history.js";
+import { listSessions, loadSession } from "../config/history.js";
 import {
   applyConfigOverrides,
   parseConfigOverride,
@@ -16,7 +16,7 @@ vi.mock("../config/config.js", async (importOriginal) => ({
 }));
 vi.mock("../config/keybindings.js", () => ({ loadKeybindings: vi.fn(async () => ({})) }));
 vi.mock("../config/theme.js", () => ({ loadTheme: vi.fn() }));
-vi.mock("../config/history.js", () => ({ listSessions: vi.fn(async () => []) }));
+vi.mock("../config/history.js", () => ({ listSessions: vi.fn(async () => []), loadSession: vi.fn() }));
 vi.mock("../providers/registry.js", () => ({ createProvider: vi.fn() }));
 vi.mock("../utils/auto-update.js", () => ({ checkAndUpdate: vi.fn() }));
 vi.mock("../utils/temp-output.js", () => ({ tempOutputManager: { pruneStale: vi.fn() } }));
@@ -49,6 +49,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   process.argv = originalArgv;
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -205,6 +206,38 @@ describe("-c/--config production CLI behavior", () => {
     process.argv = [process.execPath, "agav", "-P", "hello", "-c", "provider=ollama", "-c", "model=llama3.2"];
     await expect(main()).rejects.toThrow(providerReached);
     expect(createProvider).toHaveBeenLastCalledWith(expect.objectContaining({ provider: "ollama", model: "llama3.2" }));
+  });
+
+  // Ollama has no static default (defaultModelForProvider → ""): main probes the
+  // local server. Stubbing that probe doubles as proof the stale model was reset —
+  // a kept claude model means no probe runs and this assertion fails.
+  function stubOllamaProbe() {
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ models: [{ name: "llama3.2" }] }),
+    })));
+  }
+
+  it("-c provider alone drops the old provider's model and re-picks, like --provider", async () => {
+    stubOllamaProbe();
+    process.argv = [process.execPath, "agav", "-P", "hello", "-c", "provider=ollama"];
+    await expect(main()).rejects.toThrow(providerReached);
+    expect(createProvider).toHaveBeenLastCalledWith(expect.objectContaining({
+      provider: "ollama",
+      model: "llama3.2",
+    }));
+  });
+
+  it("-c provider replaces a resumed session's model from another provider", async () => {
+    stubOllamaProbe();
+    vi.mocked(listSessions).mockResolvedValue([{ id: "s1", provider: "anthropic", model: "session-claude" }] as never);
+    vi.mocked(loadSession).mockResolvedValue({ id: "s1", messages: [], provider: "anthropic", model: "session-claude" } as never);
+    process.argv = [process.execPath, "agav", "-P", "hello", "--resume", "s1", "-c", "provider=ollama"];
+    await expect(main()).rejects.toThrow(providerReached);
+    expect(createProvider).toHaveBeenLastCalledWith(expect.objectContaining({
+      provider: "ollama",
+      model: "llama3.2",
+    }));
   });
 
   it("control: without -c the last-session restore still adopts its model", async () => {
