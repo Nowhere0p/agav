@@ -39,6 +39,7 @@ const SESSION_ONLY_KEY_SPECS = {
 const BLOCKED_KEYS = [
   "orgAllowedModels", "orgAllowedProviders", "orgManagedProvider",
   "orgManagedModel", "orgPermissionFloor", "openaiGatewayAuth",
+  "auditSink",
 ] as const;
 type BlockedConfigKey = (typeof BLOCKED_KEYS)[number];
 const BLOCKED_KEY_SET: ReadonlySet<string> = new Set<string>(BLOCKED_KEYS);
