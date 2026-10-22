@@ -43,6 +43,7 @@ const BLOCKED_KEYS = [
 ] as const;
 type BlockedConfigKey = (typeof BLOCKED_KEYS)[number];
 const BLOCKED_KEY_SET: ReadonlySet<string> = new Set<string>(BLOCKED_KEYS);
+const PROTOTYPE_SEGMENTS: ReadonlySet<string> = new Set(["__proto__", "constructor", "prototype"]);
 
 const KEY_SPECS: Record<string, KeySpec> = {};
 for (const [key, spec] of Object.entries(PROJECT_CONFIG_TEMPLATE)) {
@@ -157,11 +158,15 @@ export function parseConfigOverride(raw: string | undefined): ConfigOverride {
   if (path.some((segment) => segment.length === 0)) {
     fail(`-c has an invalid key path ${JSON.stringify(keyPart)} (e.g. -c theme.promptColor=blue).`);
   }
+  const reserved = path.find((segment) => PROTOTYPE_SEGMENTS.has(segment));
+  if (reserved !== undefined) {
+    fail(`-c key path ${JSON.stringify(keyPart)} may not use the prototype property ${JSON.stringify(reserved)}.`);
+  }
   const top = path[0]!;
   if (BLOCKED_KEY_SET.has(top)) {
     fail(`-c ${top} is managed by organization policy and cannot be set from the command line.`);
   }
-  const spec = KEY_SPECS[top];
+  const spec = Object.hasOwn(KEY_SPECS, top) ? KEY_SPECS[top] : undefined;
   if (!spec) {
     const suggestion = findClosest(top, Object.keys(KEY_SPECS));
     fail(`unknown config key ${JSON.stringify(top)}${suggestion ? `; did you mean "${suggestion}"?` : "."} Keys match the ones documented in config.json.`);
@@ -179,10 +184,16 @@ export function parseConfigOverride(raw: string | undefined): ConfigOverride {
  */
 export function applyConfigOverrides(config: AgavConfig, overrides: readonly ConfigOverride[]): void {
   for (const { path, value } of overrides) {
+    const keyPath = path.join(".");
+    const reserved = path.find((segment) => PROTOTYPE_SEGMENTS.has(segment));
+    if (reserved !== undefined) {
+      fail(`-c key path ${JSON.stringify(keyPath)} may not use the prototype property ${JSON.stringify(reserved)}.`);
+    }
     let target = config as unknown as Record<string, unknown>;
     for (let i = 0; i < path.length - 1; i++) {
       const segment = path[i]!;
-      const next = target[segment];
+      // Own-property only — an inherited value must never be walked into.
+      const next = Object.hasOwn(target, segment) ? target[segment] : undefined;
       if (typeof next !== "object" || next === null || Array.isArray(next)) {
         target[segment] = {};
       }

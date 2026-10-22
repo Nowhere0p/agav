@@ -156,6 +156,29 @@ describe("-c/--config flag parsing", () => {
     expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining('did you mean "effort"'));
   });
 
+  it.each(["theme.__proto__.reviewMarker=true", "__proto__.evil=1", "theme.constructor.x=1", "x.prototype.y=1"])(
+    "rejects prototype-polluting path %s at parse time",
+    (entry) => {
+      expect(() => parseArgs(["-c", entry])).toThrow(exitError);
+      expect(process.exit).toHaveBeenCalledWith(1);
+      expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining("prototype property"));
+    },
+  );
+
+  it("leaves Object.prototype untouched after a rejected __proto__ path", () => {
+    expect(() => parseArgs(["-c", "theme.__proto__.reviewMarker=true"])).toThrow(exitError);
+    expect(Object.prototype).not.toHaveProperty("reviewMarker");
+    expect(({} as Record<string, unknown>).reviewMarker).toBeUndefined();
+  });
+
+  it.each(["toString", "valueOf", "hasOwnProperty"])(
+    "rejects inherited Object.prototype name %s as an unknown key",
+    (key) => {
+      expect(() => parseArgs(["-c", `${key}=x`])).toThrow(exitError);
+      expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining("unknown config key"));
+    },
+  );
+
   it("rejects a missing value at the end of argv", () => {
     expect(() => parseArgs(["-P", "hi", "-c"])).toThrow(exitError);
     expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining("-c/--config expects key=value"));
@@ -163,6 +186,18 @@ describe("-c/--config flag parsing", () => {
 });
 
 describe("applyConfigOverrides", () => {
+  it("refuses a hand-crafted __proto__ path without polluting Object.prototype", () => {
+    const target = { theme: { promptColor: "cyan" } } as unknown as AgavConfig;
+    expect(() => applyConfigOverrides(target, [{ path: ["theme", "__proto__", "reviewMarker"], value: true }])).toThrow(exitError);
+    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(({} as Record<string, unknown>).reviewMarker).toBeUndefined();
+    expect(target.theme).toEqual({ promptColor: "cyan" });
+  });
+
+  it("refuses a hand-crafted constructor path", () => {
+    expect(() => applyConfigOverrides({} as AgavConfig, [{ path: ["constructor"], value: "x" }])).toThrow(exitError);
+  });
+
   it("sets one nested property without touching its siblings", () => {
     const target = { theme: { userLabel: "cyan" } } as unknown as AgavConfig;
     applyConfigOverrides(target, [{ path: ["theme", "promptColor"], value: "blue" }]);
