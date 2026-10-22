@@ -29,7 +29,7 @@ const SESSION_ONLY_KEY_SPECS = {
   openaiApi: { type: "string", enum: ["chat", "responses"] },
   agentMarketplace: { type: "string" },
   controlPlane: { type: "string" },
-  statusBar: { type: "object" },
+  statusBar: { type: "array" },
 } as const satisfies Record<string, KeySpec>;
 
 /**
@@ -66,6 +66,9 @@ export type ConfigOverrideCoverage = AssertNever<Exclude<keyof AgavConfig, Cover
 
 /** Non-negative-safe-integer keys. maxIterations is absent: it shares parseMaxTurns (>= 1) with --max-turns. */
 const INTEGER_KEYS = new Set(["maxTokens", "errorRetries", "ollamaPort"]);
+
+/** Canonical array index — the only segment a supported indexed edit may address. */
+const ARRAY_INDEX_RE = /^(?:0|[1-9]\d*)$/;
 
 const NUMBER_RE = /^-?(?:0|[1-9]\d*)(?:\.\d+)?$/;
 
@@ -194,8 +197,16 @@ export function applyConfigOverrides(config: AgavConfig, overrides: readonly Con
       const segment = path[i]!;
       // Own-property only — an inherited value must never be walked into.
       const next = Object.hasOwn(target, segment) ? target[segment] : undefined;
-      if (typeof next !== "object" || next === null || Array.isArray(next)) {
-        target[segment] = {};
+      const indexed = ARRAY_INDEX_RE.test(path[i + 1]!);
+      if (next !== undefined && next !== null && typeof next === "object") {
+        // Preserve arrays: only an indexed segment may walk into one. Anything
+        // else would silently replace the array (and its data) with an object.
+        if (Array.isArray(next) && !indexed) {
+          const arrayKey = path.slice(0, i + 1).join(".");
+          fail(`-c key path ${JSON.stringify(keyPath)} must use a numeric index to edit the array ${JSON.stringify(arrayKey)} (e.g. -c ${arrayKey}.0=...).`);
+        }
+      } else {
+        target[segment] = indexed ? [] : {};
       }
       target = target[segment] as Record<string, unknown>;
     }

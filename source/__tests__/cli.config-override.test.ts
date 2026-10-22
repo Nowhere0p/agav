@@ -82,7 +82,7 @@ describe("-c/--config flag parsing", () => {
     { argv: ["-c", "hideAbsolutePath=false"], expected: { path: ["hideAbsolutePath"], value: false } },
     { argv: ["-c", 'allowedTools=["read_file"]'], expected: { path: ["allowedTools"], value: ["read_file"] } },
     { argv: ["-c", 'hooks={"afterEdit":"npm test"}'], expected: { path: ["hooks"], value: { afterEdit: "npm test" } } },
-    { argv: ["-c", "statusBar={}"], expected: { path: ["statusBar"], value: {} } },
+    { argv: ["-c", 'statusBar=[{"id":"hint","enabled":false}]'], expected: { path: ["statusBar"], value: [{ id: "hint", enabled: false }] } },
     { argv: ["-c", "openaiApi=chat"], expected: { path: ["openaiApi"], value: "chat" } },
     { argv: ["-c", "provider=deepseek"], expected: { path: ["provider"], value: "deepseek" } },
     { argv: ["-c", "permissionMode=deny-writes"], expected: { path: ["permissionMode"], value: "deny-writes" } },
@@ -127,6 +127,7 @@ describe("-c/--config flag parsing", () => {
     ["-c", "search=maybe"],
     ["-c", "allowedTools=oops"],
     ["-c", "openaiApi=bogus"],
+    ["-c", "statusBar={}"],
     ["-c", "orgManagedProvider=ollama"],
     ["-c", "orgPermissionFloor=auto-accept"],
     ["-c", "openaiGatewayAuth=true"],
@@ -214,6 +215,35 @@ describe("applyConfigOverrides", () => {
     const target = { theme: { userLabel: "cyan" } } as unknown as AgavConfig;
     applyConfigOverrides(target, [{ path: ["theme"], value: { promptColor: "blue" } }]);
     expect(target.theme).toEqual({ promptColor: "blue" });
+  });
+
+  it("replaces a whole array when named without a dotted path", () => {
+    const target = { statusBar: [{ id: "model", enabled: true }] } as unknown as AgavConfig;
+    applyConfigOverrides(target, [{ path: ["statusBar"], value: [{ id: "hint", enabled: false }] }]);
+    expect(target.statusBar).toEqual([{ id: "hint", enabled: false }]);
+  });
+
+  it("preserves an existing array during an indexed edit", () => {
+    const target = {
+      statusBar: [{ id: "model", enabled: true }, { id: "hint", enabled: true }],
+    } as unknown as AgavConfig;
+    applyConfigOverrides(target, [{ path: ["statusBar", "1", "enabled"], value: false }]);
+    expect(Array.isArray(target.statusBar)).toBe(true);
+    expect(target.statusBar).toEqual([{ id: "model", enabled: true }, { id: "hint", enabled: false }]);
+  });
+
+  it("creates a missing intermediate as an array when the next segment is an index", () => {
+    const target = {} as AgavConfig;
+    applyConfigOverrides(target, [{ path: ["statusBar", "0", "enabled"], value: false }]);
+    expect(target.statusBar).toEqual([{ enabled: false }]);
+    expect(Array.isArray(target.statusBar)).toBe(true);
+  });
+
+  it("refuses a non-index segment under an existing array instead of destroying it", () => {
+    const target = { statusBar: [{ id: "model", enabled: true }] } as unknown as AgavConfig;
+    expect(() => applyConfigOverrides(target, [{ path: ["statusBar", "segments", "0", "n"], value: 3 }])).toThrow(exitError);
+    expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining("must use a numeric index"));
+    expect(target.statusBar).toEqual([{ id: "model", enabled: true }]);
   });
 });
 
