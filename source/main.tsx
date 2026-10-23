@@ -1,6 +1,6 @@
 import { render } from "./ink/index.js";
 import App from "./app.js";
-import { EFFORT_LEVELS, isEffortLevel, loadConfig, type AgavConfig } from "./config/config.js";
+import { EFFORT_LEVELS, isEffortLevel, loadConfig, setSessionConfigOverrides, type AgavConfig } from "./config/config.js";
 import {
   applyConfigOverrides,
   describeConfigOverrides,
@@ -779,6 +779,11 @@ export async function main() {
   const modelBeforeOverrides = config.model;
 
   if (configOverrides?.length) {
+    // Register the session overlay so later loadConfig() consumers (tools, marketplace) see -c too.
+    setSessionConfigOverrides({
+      entries: configOverrides,
+      apply: (cfg) => applyConfigOverrides(cfg, configOverrides),
+    });
     applyConfigOverrides(config, configOverrides);
     // Org policy outranks every CLI layer — re-run loadConfig's org tail so -c cannot
     // overwrite pins, the permission floor, the allowedTools merge, or gateway auth.
