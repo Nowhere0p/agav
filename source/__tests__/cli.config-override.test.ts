@@ -152,6 +152,21 @@ describe("-c/--config flag parsing", () => {
     });
   });
 
+  it.each([
+    ["login", "-c", "controlPlane=https://cp.example"],
+    ["-c", "controlPlane=https://cp.example", "login"],
+    ["logout", "-c", "controlPlane=https://cp.example"],
+  ])("rejects -c with %s, which resolves config before any session overlay exists", (...argv) => {
+    expect(() => parseArgs(argv)).toThrow(exitError);
+    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining("not supported with"));
+  });
+
+  it("points login's rejection at --control-plane", () => {
+    expect(() => parseArgs(["login", "-c", "controlPlane=https://cp.example"])).toThrow(exitError);
+    expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining("--control-plane <url>"));
+  });
+
   it("suggests the closest key for a typo", () => {
     expect(() => parseArgs(["-c", "efrot=low"])).toThrow(exitError);
     expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining('did you mean "effort"'));
