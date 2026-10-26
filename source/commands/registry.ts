@@ -23,6 +23,7 @@ import { skillsCommand } from "../skills/commands.js"
 import { steerCommand } from "./steer.js"
 import { changelogCommand } from "./changelog.js"
 import { contextCommand } from "./context.js"
+import { statusCommand } from "./status.js"
 import { agentsCommand } from "./agents.js"
 import { agentLockCommand } from "./agent-lock.js"
 import { openCommand } from "./open.js"
@@ -30,6 +31,7 @@ import { mcpCommand } from "./mcp.js"
 import { copyCommand } from "./copy.js"
 import { voiceCommand } from "./voice.js"
 import { customizeCommand } from "./customize.js"
+import { loginCommand, logoutCommand } from "./login.js"
 export { MID_TURN_SAFE_COMMANDS, isCommandAllowedMidTurn } from "./mid-turn.js"
 
 /** Store slash commands and dispatch raw user input to the matching handler. */
@@ -69,6 +71,7 @@ export class CommandRegistry {
     this.register(steerCommand)
     this.register(changelogCommand)
     this.register(contextCommand)
+    this.register(statusCommand)
     this.register(agentsCommand)
     this.register(agentLockCommand)
     this.register(openCommand)
@@ -76,6 +79,8 @@ export class CommandRegistry {
     this.register(mcpCommand)
     this.register(voiceCommand)
     this.register(customizeCommand)
+    this.register(loginCommand)
+    this.register(logoutCommand)
   }
 
   /** Add a command to the registry by name. */

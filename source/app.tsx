@@ -240,6 +240,7 @@ export default function App({ config: initialConfig, keybindings, resumeMessages
     cancelSubagent,
     clearMessages,
     confirmTool,
+    getEffectivePermissionMode,
     conversation,
     toolRegistry,
     saveNow,
@@ -1061,6 +1062,7 @@ export default function App({ config: initialConfig, keybindings, resumeMessages
             config,
             provider: activeProvider ?? undefined,
             getModelSelectionVersion: () => modelSelectionVersion.current,
+            getEffectivePermissionMode,
             setModel: (model: string) => {
               // Enforce the org policy on interactive model changes (/model,
               // /fast, /deep): a managed pin or allowlist applies to every
@@ -1193,7 +1195,7 @@ export default function App({ config: initialConfig, keybindings, resumeMessages
           if (result) {
             switch (result.type) {
               case "message": {
-                const message: DisplayMessage = { id: `sys-${++sysMessageId}`, role: "system", content: result.text };
+                const message: DisplayMessage = { id: `sys-${++sysMessageId}`, role: "system", content: result.text, skipPathFormatting: (result as { preservePaths?: boolean }).preservePaths };
                 if (/^\/(steer|plan)(?:\s|$)/i.test(trimmed)) {
                   addDisplayMessage(message);
                 } else {
@@ -1453,7 +1455,7 @@ export default function App({ config: initialConfig, keybindings, resumeMessages
         {systemMessages.length > 0 && (
           <Box marginBottom={1} flexDirection="column">
             {systemMessages.map((msg) => {
-              const displayContent = terminalRelativePaths(msg.content);
+              const displayContent = msg.skipPathFormatting ? msg.content : terminalRelativePaths(msg.content);
               const hasMarkdown = /^#{1,3}\s|^\*\*|\*\*$|^- \*\*|```/.test(displayContent);
               if (hasMarkdown && displayContent.length > 200) {
                 return (

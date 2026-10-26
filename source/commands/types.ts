@@ -52,6 +52,13 @@ export interface CommandContext {
   renameSession: (name: string) => void
   currentSessionId?: string
   exit: () => void
+  /**
+   * The permission mode actually in force for the session, after a generic
+   * "Always" approval widens it and the org floor clamps it. Reflects the live
+   * session decision, which `config.permissionMode` does not. Absent in headless
+   * mode, where `config.permissionMode` is authoritative.
+   */
+  getEffectivePermissionMode?: () => AgavConfig["permissionMode"]
   /** Whether an agent turn is currently in flight. */
   isLoading?: boolean
   getMCPAuthenticationRequired?: () => string[]
@@ -90,7 +97,16 @@ export interface CommandContext {
 
 /** Represents the result of executing a slash command. */
 export type CommandResult =
-  | { type: "message"; text: string }
+  | {
+      type: "message";
+      text: string;
+      /**
+       * Render the text verbatim, skipping terminal path collapsing. Set by
+       * commands like /status whose output intentionally shows the absolute
+       * working directory, which would otherwise be rewritten to ".".
+       */
+      preservePaths?: boolean;
+    }
   | { type: "clear" }
   | { type: "exit" }
   | { type: "none" }
