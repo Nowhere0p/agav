@@ -174,6 +174,15 @@ export function parseConfigOverride(raw: string | undefined): ConfigOverride {
     const suggestion = findClosest(top, Object.keys(KEY_SPECS));
     fail(`unknown config key ${JSON.stringify(top)}${suggestion ? `; did you mean "${suggestion}"?` : "."} Keys match the ones documented in config.json.`);
   }
+  // Scalars are leaves, arrays are edited by index; nested object shape is undescribed, so it descends freely.
+  if (path.length > 1) {
+    if (spec.type === "array" && !ARRAY_INDEX_RE.test(path[1]!)) {
+      fail(`-c ${top} is an array; edit elements by index (e.g. -c ${top}.0=...) or set it whole with -c ${top}='[...]'`);
+    }
+    if (spec.type !== "object" && spec.type !== "array") {
+      fail(`-c ${top} is a ${spec.type}; set it whole with -c ${top}=<value>.`);
+    }
+  }
   const rawValue = raw.slice(eq + 1).trim();
   const value = path.length === 1
     ? coerceValue(top, spec, rawValue)

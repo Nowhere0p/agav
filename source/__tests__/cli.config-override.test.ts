@@ -108,8 +108,27 @@ describe("-c/--config flag parsing", () => {
   it("parses dotted paths and coerces obvious scalars under them", () => {
     expect(parseConfigOverride("theme.promptColor=blue"))
       .toEqual({ path: ["theme", "promptColor"], value: "blue" });
-    expect(parseConfigOverride("statusBar.segments.0.n=3"))
-      .toEqual({ path: ["statusBar", "segments", "0", "n"], value: 3 });
+  });
+
+  it.each(["maxTokens.foo=1", "effort.low=1", "provider.name=x"])(
+    "rejects traversal beneath scalar key %s", (entry) => {
+      expect(() => parseArgs(["-c", entry])).toThrow(exitError);
+      expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining("set it whole"));
+    },
+  );
+
+  it.each(["allowedTools.foo=read_file", "statusBar.segments.0.n=3"])(
+    "rejects a non-index segment beneath array key %s", (entry) => {
+      expect(() => parseArgs(["-c", entry])).toThrow(exitError);
+      expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining("by index"));
+    },
+  );
+
+  it("accepts indexed edits beneath an array key", () => {
+    expect(parseConfigOverride("allowedTools.0=read_file"))
+      .toEqual({ path: ["allowedTools", "0"], value: "read_file" });
+    expect(parseConfigOverride("statusBar.0.enabled=false"))
+      .toEqual({ path: ["statusBar", "0", "enabled"], value: false });
   });
 
   it.each([

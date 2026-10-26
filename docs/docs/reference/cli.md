@@ -35,7 +35,7 @@ agav -P -c provider=ollama "summarize this repo"
 ```
 
 - Repeatable; when the same key is given twice, the later one wins.
-- Dotted paths set one nested value without touching its siblings: `-c theme.promptColor=blue`.
+- Dotted paths set one nested value without touching its siblings: `-c theme.promptColor=blue`. Scalars take a whole value (`-c maxTokens.foo=1` is rejected) and arrays are edited by index (`-c statusBar.0.enabled=false`).
 - `true`/`false` and numbers are coerced; object and array values are JSON: `-c 'hooks={"afterEdit":"npm test"}'`.
 - Unknown keys, malformed entries, or invalid values fail fast with a clear error, including a "did you mean" hint for typos.
 - Dedicated flags still win on conflict (`-c effort=low --effort high` → `high`), and overrides are never written back to `config.json`.
