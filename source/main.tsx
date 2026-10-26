@@ -305,13 +305,13 @@ export function parseArgs(argv: string[]) {
     pos.shift();
   }
 
-  // login/logout resolve their own config before any session overlay exists, so a
-  // -c override would be silently dropped. Reject instead; --control-plane is the
-  // supported way to point login at a specific address.
-  if ((flags.login || flags.logout) && flags.configOverrides?.length) {
+  // These dispatch (and exit) before any session overlay exists, so a -c override
+  // would be silently dropped. Reject instead.
+  const earlyExit = flags.login ? "login" : flags.logout ? "logout" : flags.job ? "job" : flags.mcp ? "mcp" : "";
+  if (earlyExit && flags.configOverrides?.length) {
     const keys = (flags.configOverrides as ConfigOverride[]).map((o) => o.path.join(".")).join(", ");
     const hint = flags.login ? " Use --control-plane <url> to choose the control plane." : "";
-    process.stderr.write(`Error: -c/--config is not supported with "agav ${flags.logout ? "logout" : "login"}" (got: ${keys}).${hint}\n`);
+    process.stderr.write(`Error: -c/--config is not supported with "agav ${earlyExit}" (got: ${keys}).${hint}\n`);
     process.exit(1);
   }
 

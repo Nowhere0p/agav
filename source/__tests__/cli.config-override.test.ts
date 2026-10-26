@@ -156,6 +156,10 @@ describe("-c/--config flag parsing", () => {
     ["login", "-c", "controlPlane=https://cp.example"],
     ["-c", "controlPlane=https://cp.example", "login"],
     ["logout", "-c", "controlPlane=https://cp.example"],
+    ["job", "-c", "backgroundAutomation=paused"],
+    ["-c", "backgroundAutomation=paused", "job"],
+    ["mcp", "-c", "effort=low"],
+    ["-c", "effort=low", "mcp"],
   ])("rejects -c with %s, which resolves config before any session overlay exists", (...argv) => {
     expect(() => parseArgs(argv)).toThrow(exitError);
     expect(process.exit).toHaveBeenCalledWith(1);
