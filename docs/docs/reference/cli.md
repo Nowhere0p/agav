@@ -39,7 +39,7 @@ agav -P -c provider=ollama "summarize this repo"
 - `true`/`false` and numbers are coerced; object and array values are JSON: `-c 'hooks={"afterEdit":"npm test"}'`.
 - Unknown keys, malformed entries, or invalid values fail fast with a clear error, including a "did you mean" hint for typos.
 - Dedicated flags still win on conflict (`-c effort=low --effort high` → `high`), and overrides are never written back to `config.json`.
-- `agav login`, `agav logout`, `agav job`, and `agav mcp` reject `-c` outright: they dispatch before any session exists, so an override would be silently dropped. Use `agav login --control-plane <url>` to point login at a control plane.
+- `agav login`, `agav logout`, `agav job`, `agav mcp`, and `agav workflows` reject `-c` outright: they dispatch before any session exists, so an override would be silently dropped. Use `agav login --control-plane <url>` to point login at a control plane.
 - Organization-managed policy outranks `-c` on every field it enforces; enforcement keys such as `orgManagedProvider` or `orgPermissionFloor` are rejected outright.
 
 ## Options

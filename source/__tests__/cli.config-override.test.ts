@@ -179,6 +179,8 @@ describe("-c/--config flag parsing", () => {
     ["-c", "backgroundAutomation=paused", "job"],
     ["mcp", "-c", "effort=low"],
     ["-c", "effort=low", "mcp"],
+    ["-c", "workflowsEnabled=true", "workflows"],
+    ["-c", "effort=low", "workflows", "run", "demo"],
   ])("rejects -c with %s, which resolves config before any session overlay exists", (...argv) => {
     expect(() => parseArgs(argv)).toThrow(exitError);
     expect(process.exit).toHaveBeenCalledWith(1);

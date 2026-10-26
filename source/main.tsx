@@ -329,7 +329,7 @@ export function parseArgs(argv: string[]) {
 
   // These dispatch (and exit) before any session overlay exists, so a -c override
   // would be silently dropped. Reject instead.
-  const earlyExit = flags.login ? "login" : flags.logout ? "logout" : flags.job ? "job" : flags.mcp ? "mcp" : "";
+  const earlyExit = flags.login ? "login" : flags.logout ? "logout" : flags.job ? "job" : flags.mcp ? "mcp" : flags.workflows ? "workflows" : "";
   if (earlyExit && flags.configOverrides?.length) {
     const keys = (flags.configOverrides as ConfigOverride[]).map((o) => o.path.join(".")).join(", ");
     const hint = flags.login ? " Use --control-plane <url> to choose the control plane." : "";
@@ -337,7 +337,7 @@ export function parseArgs(argv: string[]) {
     process.exit(1);
   }
 
-  if (!flags.update && !flags.agents && !flags.skills && !flags.sessions && !flags.mcp && !flags.run && !flags.job && !flags.print && !flags.login && !flags.logout && pos.length > 0) {
+  if (!flags.update && !flags.agents && !flags.skills && !flags.sessions && !flags.mcp && !flags.run && !flags.job && !flags.workflows && !flags.print && !flags.login && !flags.logout && pos.length > 0) {
      process.stderr.write(`error: unexpected arguments: ${pos.join(" ")}\n`);
      process.exit(1);
   }
