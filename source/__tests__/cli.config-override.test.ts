@@ -350,6 +350,16 @@ describe("-c/--config production CLI behavior", () => {
     expect(createProvider).toHaveBeenLastCalledWith(expect.objectContaining({ provider: "anthropic", model: "session-model" }));
   });
 
+  it("expands a ~ path carried by -c before the provider sees it", async () => {
+    const { homedir } = await import("node:os");
+    const { join } = await import("node:path");
+    process.argv = [process.execPath, "agav", "-P", "hello", "-c", "provider=vertex-ai", "-c", "vertexAICredentialsPath=~/.gcp/sa.json"];
+    await expect(main()).rejects.toThrow(providerReached);
+    expect(createProvider).toHaveBeenLastCalledWith(expect.objectContaining({
+      vertexAICredentialsPath: join(homedir(), ".gcp/sa.json"),
+    }));
+  });
+
   it("fails at parse time, before loadConfig, on a malformed entry", async () => {
     process.argv = [process.execPath, "agav", "-P", "hello", "-c", "foo"];
     await expect(main()).rejects.toThrow(exitError);

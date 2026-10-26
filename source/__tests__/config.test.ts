@@ -422,4 +422,22 @@ describe("config", () => {
     const written2 = JSON.parse(String(writeFile.mock.calls.at(-1)?.[1]));
     expect(written2.agentMarketplace).toBeUndefined();
   });
+
+  it("expands a raw ~ in a session-overridden vertexAICredentialsPath", async () => {
+    const { homedir } = await import("node:os");
+    const { join } = await import("node:path");
+    readFile.mockImplementation(async (path: any) => {
+      if (String(path).endsWith("config.json")) return JSON.stringify({});
+      throw Object.assign(new Error("missing"), { code: "ENOENT" });
+    });
+
+    const mod = await import("../config/config.js");
+    const overrides = await import("../config/cli-overrides.js");
+    const entries = [overrides.parseConfigOverride("vertexAICredentialsPath=~/.gcp/sa.json")];
+    mod.setSessionConfigOverrides({ entries, apply: (cfg) => overrides.applyConfigOverrides(cfg, entries) });
+
+    const loaded = await mod.loadConfig();
+    expect(loaded.vertexAICredentialsPath).toBe(join(homedir(), ".gcp/sa.json"));
+    mod.setSessionConfigOverrides(undefined);
+  });
 });

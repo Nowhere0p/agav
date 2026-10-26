@@ -1,6 +1,6 @@
 import { render } from "./ink/index.js";
 import App from "./app.js";
-import { EFFORT_LEVELS, isEffortLevel, loadConfig, setSessionConfigOverrides, type AgavConfig } from "./config/config.js";
+import { EFFORT_LEVELS, expandHome, isEffortLevel, loadConfig, setSessionConfigOverrides, type AgavConfig } from "./config/config.js";
 import {
   applyConfigOverrides,
   describeConfigOverrides,
@@ -795,6 +795,10 @@ export async function main() {
       apply: (cfg) => applyConfigOverrides(cfg, configOverrides),
     });
     applyConfigOverrides(config, configOverrides);
+    // Same as loadConfig's tail: an override may carry a raw `~`.
+    if (config.vertexAICredentialsPath) {
+      config.vertexAICredentialsPath = expandHome(config.vertexAICredentialsPath);
+    }
     // Org policy outranks every CLI layer — re-run loadConfig's org tail so -c cannot
     // overwrite pins, the permission floor, the allowedTools merge, or gateway auth.
     const org = await loadOrgPolicy();

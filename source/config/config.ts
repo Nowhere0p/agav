@@ -566,6 +566,10 @@ export async function loadConfig(): Promise<AgavConfig> {
     sessionConfigOverrides.apply(merged);
   }
 
+  if (merged.vertexAICredentialsPath) {
+    merged.vertexAICredentialsPath = expandHome(merged.vertexAICredentialsPath);
+  }
+
   // Organization policy applies last so it overrides global, project, and env
   // sources alike. An admin's managed config is a non-overridable floor; the
   // user can tighten (e.g. a stricter permissionMode) but never loosen it.
